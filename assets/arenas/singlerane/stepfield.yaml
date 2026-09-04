@@ -1,0 +1,130 @@
+robocup_arena:
+  objects:
+
+    stepfield_1:
+      x: -1.2
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_2:
+      x: -2.4
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_3:
+      x: -3.6
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_4:
+      x: -4.8
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_5:
+      x: -1.2
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_6:
+      x: -2.4
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_7:
+      x: -3.6
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_8:
+      x: -4.8
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_11:
+      x: 1.2
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_12:
+      x: 2.4
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_13:
+      x: 3.6
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_14:
+      x: 0.0
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_15:
+      x: 1.2
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_16:
+      x: 2.4
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_17:
+      x: 3.6
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_18:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0

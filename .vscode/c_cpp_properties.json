@@ -1,0 +1,37 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/sato/ws_crawler/install/open_crawler_teleope/include/**",
+        "/home/sato/ws_crawler/install/dynamixel_controller/include/**",
+        "/home/sato/ws_crawler/install/dynamixel_workbench_toolbox/include/**",
+        "/home/sato/ws_crawler/install/dynamixel_sdk/include/**",
+        "/home/sato/ws_crawler/install/crawler_traversability_estimation/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_slam/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_odom/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_util/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_sync/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_rviz_plugins/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_conversions/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/rtabmap_msgs/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/ps5_msgs/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/openarm_hardware/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/flipper_msgs/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/choreonoid_ros/include/**",
+        "/home/sato/NITRo_WRS2025/wrs_ws/install/arm_msgs/include/**",
+        "/opt/ros/humble/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

@@ -1,0 +1,5 @@
+robocup_arena:
+  objects:
+    30cmstep_1: { x: 0.0,  y: 0,  z: 0.0, roll: 0, pitch: 0, yaw: 90 }
+    30cmstep_2: { x: 1.0,  y: 0,  z: 0.0, roll: 0, pitch: 0, yaw: 90 }
+    30cmstep_3: { x: 2.0,  y: 0,  z: 0.0, roll: 0, pitch: 0, yaw: 90 }

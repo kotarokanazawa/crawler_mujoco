@@ -1,0 +1,130 @@
+robocup_arena:
+  objects:
+
+    continuesramp_1:
+      x: -1.2
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_2:
+      x: -2.4
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_3:
+      x: -3.6
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_4:
+      x: -4.8
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_5:
+      x: -1.2
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_6:
+      x: -2.4
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_7:
+      x: -3.6
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_8:
+      x: -4.8
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_11:
+      x: 1.2
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_12:
+      x: 2.4
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_13:
+      x: 3.6
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_14:
+      x: 0.0
+      y: 2.4
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_15:
+      x: 1.2
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_16:
+      x: 2.4
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_17:
+      x: 3.6
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    continuesramp_18:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0

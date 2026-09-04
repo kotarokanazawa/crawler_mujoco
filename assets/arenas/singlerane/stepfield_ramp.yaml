@@ -1,0 +1,40 @@
+robocup_arena:
+  objects:
+
+    stepfield_1:
+      x: -2.5
+      y: 1.2
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    stepfield_2:
+      x: -1.3
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: -15.0
+      yaw: 0.0
+
+    stepfield_3:
+      x: 1.1
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: -15.0
+      yaw: 180.0
+
+    stepfield_4:
+      x: 1.1
+      y: 1.2
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    wall_1:
+      x: -2.5
+      y: -1.2
+      z: 0.0
+      yaw: -90.0

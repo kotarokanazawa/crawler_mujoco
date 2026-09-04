@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="bridge376">
+    <static>true</static>
+    <pose>0 0 0 0 0 0</pose> 
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <scale>0.01 0.01 0.01</scale>
+            <uri>model://bridge376/Bridge_376mm.stl</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.8</mu>
+              <mu2>0.8</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <sensor name="bridge_contact" type="contact">
+        <always_on>true</always_on>
+        <!-- Zero requests one publication for every physics update. -->
+        <update_rate>0</update_rate>
+        <topic>/bridge/contacts</topic>
+        <contact>
+          <collision>collision</collision>
+        </contact>
+      </sensor>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <scale>0.01 0.01 0.01</scale>
+            <uri>model://bridge376/Bridge_376mm.stl</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

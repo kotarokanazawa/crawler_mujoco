@@ -1,0 +1,10 @@
+robocup_arena:
+  objects:
+
+    krails_1:
+      x: 1
+      y: -0.6
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0

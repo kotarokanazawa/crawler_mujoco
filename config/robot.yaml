@@ -1,0 +1,40 @@
+robot:
+  spawn_x: 0.0
+  spawn_y: 0.0
+  spawn_z: 0.5
+  chassis_mass: 65.0
+  chassis_size: [0.45, 0.20, 0.08]
+  imu_position: [0.0, 0.0, 0.04]
+  track_separation: 0.24
+  drive_track_width: 0.34
+  track_width: 0.108
+  wheelbase: 0.45
+  wheel_radius: 0.082
+  belt_thickness: 0.020
+  track_radius: 0.102
+  track_contact_radius: 0.111
+  wheel_mass: 0.3
+  straight_section_mass: 0.1
+  flipper_enabled: true
+  flipper_length: 0.29
+  flipper_width: 0.031
+  flipper_y_offset: 0.23
+  flipper_mass: 3.4
+  flipper_lower: -1.57079632679
+  flipper_upper: 1.57079632679
+  flipper_effort: 320.0
+  flipper_max_velocity: 0.8
+  flipper_position_kp: 1200.0
+  flipper_position_ki: 5000.0
+  flipper_position_kd: 30.0
+  flipper_position_integral_limit: 1.0
+  flipper_track_drive: true
+  commanded_linear_speed: 0.3
+  max_commanded_linear_speed: 0.6
+  max_commanded_angular_speed: 2.0
+  command_scale: 0.55
+  track_max_acceleration: 1.2
+  drive_force: 1000.0
+  velocity_servo_strength: 0.06
+  yaw_servo_strength: 0.35
+  straight_enabled: true

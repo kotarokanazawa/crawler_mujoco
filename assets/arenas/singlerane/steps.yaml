@@ -1,0 +1,5 @@
+robocup_arena:
+  objects:
+    stepfield_1:  { x: -3.5,  y: 1.2,  z: 0.0, roll: 0, pitch: 0, yaw: 0, scale_x: 1.0, scale_y: 1.0, scale_z: 0.5 }
+    stepfield_2:  { x: -1.1,  y: 1.2,  z: 0.0, roll: 0, pitch: 0, yaw: 0 }
+    stepfield_3:  { x: 1.3,   y: 1.2,  z: 0.0, roll: 0, pitch: 0, yaw: 0, scale_x: 1.0, scale_y: 1.0, scale_z: 2.0 }

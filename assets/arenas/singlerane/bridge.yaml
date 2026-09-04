@@ -1,0 +1,8 @@
+robocup_arena:
+  objects:
+
+    bridge376_1: { x: -2.4,  y: -0.6,  z: 0.0, roll: 0, pitch: 0, yaw: 0 }
+    pallet15_1: { x: 3.6,  y: -0.6,  z: 0.0, roll: 0, pitch: 0, yaw: 0 }
+    pallet15_2: { x: 2.4,  y: 1.8,  z: 0.0, roll: 0, pitch: 0, yaw: 180.0 }
+    pallet15_3: { x: -1.2,  y: 0.6,  z: 0.0, roll: 0, pitch: 0, yaw: 90.0 }
+    pallet15_4: { x: -3.6,  y: 0.6,  z: 0.0, roll: 0, pitch: 0, yaw: -180.0 }

@@ -1,0 +1,61 @@
+simulation:
+  timestep: 0.001
+  duration: 45.0
+  render_fps: 30
+  # Show contact points and force vectors when the native GUI is open.
+  show_contacts: false
+  integrator: implicitfast
+
+robot_config: robot.yaml
+
+sensors:
+  rgbd:
+    enabled: false
+    width: 160
+    height: 120
+    # RGB, depth, grayscale, and PointCloud2 publish rate [Hz].
+    publish_rate: 5.0
+    fovy_deg: 70.0
+    downward_pitch_deg: 20.0
+    # mono8 visualization: nearer surfaces are brighter, beyond this is black.
+    grayscale_max_depth: 8.0
+    # 1 publishes every pixel in PointCloud2; increase to reduce ROS bandwidth.
+    pointcloud_stride: 1
+    # Positions in base_link coordinates [m].
+    front_position: [0.275, 0.0, 0.065]
+    rear_position: [-0.275, 0.0, 0.065]
+
+grouser:
+  # none, rectangle, semicircle, or spike
+  shape: semicircle
+  # One common pitch and cross-section is used on main and flipper tracks.
+  # elements_per_round defines that pitch from the main-track perimeter.
+  elements_per_round: 40
+  width: 0.020
+  height: 0.018
+  friction: [3.0, 0.05, 0.005]
+  # Track-ground contact: high traction along the belt, controlled lateral
+  # slip for skid steering / zero-radius turns.
+  longitudinal_friction: 3.0
+  lateral_friction: 0.60
+  solref: [0.008, 1.0]
+  solimp: [0.95, 0.99, 0.001]
+
+environment:
+  # Terrain friction (sliding, torsional, rolling).
+  friction: [2.5, 0.05, 0.005]
+  # Gazebo arena STL models use z=0 as their bottom / ground reference.
+  arena_ground_z: 0.0
+  # Keep the lower floor below the top surface of the built-in bridge.
+  builtin_ground_z: -0.08
+  # Select a bundled YAML under assets/arenas. Empty uses the built-in bridge.
+  arena_yaml: ""
+  #arena_yaml: singlerane/bridge.yaml
+  # arena_yaml: singlerane/stair.yaml
+  # arena_yaml: singlerane/krails_ramp_wall_withstart.yaml
+  # arena_yaml: ""  # Use the simple built-in bridge below.
+  bridge_start_x: -3.0
+  bridge_end_x: -1.0
+  bridge_width: 1.2
+  bridge_thickness: 0.06
+  target_x: 3.0

@@ -1,0 +1,41 @@
+robocup_arena:
+  objects:
+
+    krails_1:
+      x: -2.5
+      y: 1.2
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+    krails_2:
+      x: -1.3
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: -15.0
+      yaw: 0.0
+
+    krails_3:
+      x: 1.1
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: -15.0
+      yaw: 180.0
+
+    krails_4:
+      x: 1.1
+      y: 1.2
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: -90.0
+
+  wall:
+    enable_default: false
+    x: -2.5
+    y: -1.2
+    z: 0.0
+    yaw: -90.0
