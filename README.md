@@ -2,6 +2,9 @@
 
 ![MuJoCoで段差を走行するフリッパ付きクローラ](picture/image.png)
 
+[プロジェクトページ](index.html) · [English version](index.en.html) ·
+[GitHub @kotarokanazawa](https://github.com/kotarokanazawa)
+
 フリッパ付きクローラを MuJoCo で走行させる、単体実行可能なシミュレータです。
 主履帯とフリッパ履帯のグローサ形状を切り替え、接触力・姿勢・到達時間を CSV に記録できます。
 ROS 2 ブリッジ、RGB-D、真値地形点群の配信にも対応します。
@@ -56,7 +59,7 @@ Python 3.10 以上の実行ファイルを指定できます。
 # 接触点と接触力を表示
 ./.venv/bin/python scripts/crawler_mujoco --shape spike --gui --show-contacts
 
-# 全形状をヘッドレス比較し、CSV とグラフを生成
+# 全形状をヘッドレス実行し、CSVを生成
 ./.venv/bin/python scripts/crawler_mujoco --shape all
 
 # MJCF の生成だけを行う
@@ -95,6 +98,8 @@ arena を使う場合は launch に
 シミュレーション、センサ、グローサ、環境は `config/default.yaml`、
 ロボット寸法と制御ゲインは `config/robot.yaml` で設定します。項目の説明は
 [docs/CONFIGURATION.md](docs/CONFIGURATION.md) にまとめています。
+独自ロボットへ置き換える場合は
+[docs/CUSTOM_ROBOT.md](docs/CUSTOM_ROBOT.md) の計測・設定・検証手順を参照してください。
 
 ## ディレクトリ構成
 
@@ -104,16 +109,16 @@ arena を使う場合は launch に
 - `launch/`, `config/`, `rviz/`: ROS 2共有資産
 - `assets/`: arena YAML、SDF/STL、凸分解済みcollision mesh
 - `picture/`: README用スクリーンショット
+- `index.html`, `index.en.html`: 日本語・英語の静的プロジェクトページ
 - `tools/`: 手動検証ツール
 - `test/`: 自動スモークテスト
-- `docs/`: 設定とROS 2連携の説明
+- `docs/`: 設定、独自ロボットへの適用、ROS 2連携の説明
 
 主な生成物:
 
 - `crawler_<shape>.xml`: 実際に読み込んだ MJCF
 - `<shape>.csv`: 位置、pitch、接触数、法線力、接線力
 - `summary.csv`: 到達位置、到達時間、最大 pitch
-- `shape_comparison.png`: `--shape all` の比較グラフ
 
 ## モデル上の制約
 

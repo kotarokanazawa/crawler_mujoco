@@ -43,7 +43,8 @@ install(DIRECTORY launch config rviz assets docs picture
   DESTINATION share/${PROJECT_NAME}
 )
 install(FILES requirements.txt DESTINATION share/${PROJECT_NAME})
-install(FILES README.md CHANGELOG.rst LICENSE THIRD_PARTY_NOTICES.md
+install(FILES index.html index.en.html README.md CHANGELOG.rst LICENSE
+  THIRD_PARTY_NOTICES.md
   DESTINATION share/${PROJECT_NAME}
 )
 

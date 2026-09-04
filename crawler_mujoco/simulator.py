@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and run the crawler grouser comparison model in native MuJoCo."""
+"""Build and run the crawler model in native MuJoCo."""
 
 from __future__ import annotations
 
@@ -731,26 +731,6 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
             "csv": str(csv_path)}
 
 
-def plot_results(results: list[dict], output: Path) -> None:
-    import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(3, 1, figsize=(9, 9), sharex=True)
-    for result in results:
-        values = np.genfromtxt(result["csv"], delimiter=",", names=True)
-        axes[0].plot(values["time_s"], values["x_m"], label=result["shape"])
-        axes[1].plot(values["time_s"], values["pitch_deg"], label=result["shape"])
-        axes[2].plot(values["time_s"], values["normal_force_N"], label=result["shape"])
-    axes[0].set_ylabel("x [m]")
-    axes[1].set_ylabel("pitch [deg]")
-    axes[2].set_ylabel("normal force [N]")
-    axes[2].set_xlabel("simulation time [s]")
-    axes[0].legend()
-    for axis in axes:
-        axis.grid(True, alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(output / "shape_comparison.png", dpi=180)
-    plt.close(fig)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path,
@@ -805,8 +785,6 @@ def main() -> None:
             server.shutdown()
         if ros_bridge is not None:
             ros_bridge.close()
-    if len(results) > 1:
-        plot_results(results, args.output)
     summary = args.output / "summary.csv"
     with summary.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=("shape", "final_x_m", "max_abs_pitch_deg",

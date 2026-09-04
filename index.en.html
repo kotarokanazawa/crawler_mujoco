@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A standalone MuJoCo simulator and ROS 2 bridge for a tracked crawler robot with flippers.">
+  <title>crawler_mujoco</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --background: #ffffff;
+      --surface: #f6f7f8;
+      --text: #202124;
+      --muted: #5f6368;
+      --border: #dadce0;
+      --link: #b54e00;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 24px;
+      background: var(--background);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.7;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    nav { display: flex; flex-wrap: wrap; gap: 16px; font-size: .9rem; }
+    a { color: var(--link); text-underline-offset: 3px; }
+    nav a { color: var(--muted); text-decoration: none; }
+    nav a:hover { color: var(--link); }
+    main { padding: 56px 0 72px; }
+    h1 { margin: 0 0 16px; font-size: clamp(2.4rem, 8vw, 4.5rem); line-height: 1.05; }
+    h2 { margin-top: 56px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 1.45rem; }
+    .lead { max-width: 720px; margin-bottom: 28px; color: var(--muted); font-size: 1.1rem; }
+    .screenshot { display: block; width: 100%; height: auto; margin: 32px 0; border: 1px solid var(--border); border-radius: 6px; }
+    ul { padding-left: 1.3rem; }
+    li { margin: 8px 0; }
+    pre {
+      overflow-x: auto;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      font-size: .88rem;
+      line-height: 1.6;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .links { display: flex; flex-wrap: wrap; gap: 12px 22px; }
+    footer { padding: 24px 0; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #151515;
+        --surface: #202020;
+        --text: #eeeeee;
+        --muted: #b5b5b5;
+        --border: #3d3d3d;
+        --link: #ff9b54;
+      }
+    }
+
+    @media (max-width: 600px) {
+      header { align-items: flex-start; flex-direction: column; gap: 10px; }
+      main { padding-top: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>crawler_mujoco</strong>
+    <nav aria-label="Page navigation">
+      <a href="#features">Features</a>
+      <a href="#start">Usage</a>
+      <a href="index.html" lang="ja" hreflang="ja">日本語</a>
+      <a href="https://github.com/kotarokanazawa" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>crawler_mujoco</h1>
+    <p class="lead">A standalone MuJoCo simulator for a tracked crawler robot with flippers. It supports ROS 2 integration, RGB-D cameras, terrain point clouds, and structured run data.</p>
+
+    <img class="screenshot" src="picture/image.png" width="1328" height="732" alt="A tracked crawler with flippers traversing stepped terrain in MuJoCo">
+
+    <section id="features">
+      <h2>Features</h2>
+      <ul>
+        <li>Four grouser profiles: none, rectangle, semicircle, and spike</li>
+        <li>Contact point and contact force visualization</li>
+        <li>Bundled arena YAML and terrain models</li>
+        <li>CSV output for pose, contacts, forces, and traversal time</li>
+        <li>ROS 2 velocity and flipper commands, odometry, IMU, TF, and joint state</li>
+        <li>Front and rear RGB-D cameras and terrain point clouds</li>
+      </ul>
+    </section>
+
+    <section id="start">
+      <h2>Quick start</h2>
+      <pre><code>./setup.sh
+./.venv/bin/python scripts/crawler_mujoco --shape rectangle --gui</code></pre>
+
+      <h2>ROS 2</h2>
+      <pre><code>source /opt/ros/humble/setup.bash
+colcon build --symlink-install --packages-select crawler_mujoco
+source install/setup.bash
+ros2 launch crawler_mujoco crawler_mujoco.launch.py shape:=semicircle</code></pre>
+    </section>
+
+    <section>
+      <h2>Documentation</h2>
+      <div class="links">
+        <a href="README.md">README</a>
+        <a href="docs/CONFIGURATION.md">Configuration</a>
+        <a href="docs/CUSTOM_ROBOT.md">Custom robot guide</a>
+        <a href="docs/ROS2.md">ROS 2 integration</a>
+        <a href="THIRD_PARTY_NOTICES.md">Third-party notices</a>
+        <a href="LICENSE">License</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    crawler_mujoco · Apache-2.0 ·
+    <a href="https://github.com/kotarokanazawa" target="_blank" rel="noopener noreferrer">GitHub @kotarokanazawa</a>
+  </footer>
+</body>
+</html>

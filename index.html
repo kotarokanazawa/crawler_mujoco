@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="フリッパ付きクローラのMuJoCoシミュレータとROS 2ブリッジ。">
+  <title>crawler_mujoco</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --background: #ffffff;
+      --surface: #f6f7f8;
+      --text: #202124;
+      --muted: #5f6368;
+      --border: #dadce0;
+      --link: #b54e00;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 24px;
+      background: var(--background);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
+      line-height: 1.7;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    nav { display: flex; flex-wrap: wrap; gap: 16px; font-size: .9rem; }
+    a { color: var(--link); text-underline-offset: 3px; }
+    nav a { color: var(--muted); text-decoration: none; }
+    nav a:hover { color: var(--link); }
+    main { padding: 56px 0 72px; }
+    h1 { margin: 0 0 16px; font-size: clamp(2.4rem, 8vw, 4.5rem); line-height: 1.05; }
+    h2 { margin-top: 56px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 1.45rem; }
+    .lead { max-width: 720px; margin-bottom: 28px; color: var(--muted); font-size: 1.1rem; }
+    .screenshot { display: block; width: 100%; height: auto; margin: 32px 0; border: 1px solid var(--border); border-radius: 6px; }
+    ul { padding-left: 1.3rem; }
+    li { margin: 8px 0; }
+    pre {
+      overflow-x: auto;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      font-size: .88rem;
+      line-height: 1.6;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .links { display: flex; flex-wrap: wrap; gap: 12px 22px; }
+    footer { padding: 24px 0; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #151515;
+        --surface: #202020;
+        --text: #eeeeee;
+        --muted: #b5b5b5;
+        --border: #3d3d3d;
+        --link: #ff9b54;
+      }
+    }
+
+    @media (max-width: 600px) {
+      header { align-items: flex-start; flex-direction: column; gap: 10px; }
+      main { padding-top: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>crawler_mujoco</strong>
+    <nav aria-label="ページナビゲーション">
+      <a href="#features">機能</a>
+      <a href="#start">使い方</a>
+      <a href="index.en.html" lang="en" hreflang="en">English</a>
+      <a href="https://github.com/kotarokanazawa" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>crawler_mujoco</h1>
+    <p class="lead">フリッパ付きクローラをMuJoCoで走行させる、単体実行可能なシミュレータです。ROS 2連携、RGB-D、地形点群、走行データの記録に対応します。</p>
+
+    <img class="screenshot" src="picture/image.png" width="1328" height="732" alt="MuJoCoの段差地形を走行するフリッパ付きクローラ">
+
+    <section id="features">
+      <h2>機能</h2>
+      <ul>
+        <li>4種類のグローサ形状: none、rectangle、semicircle、spike</li>
+        <li>接触点と接触力の表示</li>
+        <li>arena YAMLと地形モデルを同梱</li>
+        <li>位置、姿勢、接触数、力、到達時間をCSVへ記録</li>
+        <li>ROS 2の速度・フリッパ指令、Odometry、IMU、TF、JointState</li>
+        <li>前後RGB-Dカメラと地形点群</li>
+      </ul>
+    </section>
+
+    <section id="start">
+      <h2>クイックスタート</h2>
+      <pre><code>./setup.sh
+./.venv/bin/python scripts/crawler_mujoco --shape rectangle --gui</code></pre>
+
+      <h2>ROS 2</h2>
+      <pre><code>source /opt/ros/humble/setup.bash
+colcon build --symlink-install --packages-select crawler_mujoco
+source install/setup.bash
+ros2 launch crawler_mujoco crawler_mujoco.launch.py shape:=semicircle</code></pre>
+    </section>
+
+    <section>
+      <h2>ドキュメント</h2>
+      <div class="links">
+        <a href="README.md">README</a>
+        <a href="docs/CONFIGURATION.md">設定リファレンス</a>
+        <a href="docs/CUSTOM_ROBOT.md">独自ロボットへの適用</a>
+        <a href="docs/ROS2.md">ROS 2連携</a>
+        <a href="THIRD_PARTY_NOTICES.md">第三者資産</a>
+        <a href="LICENSE">ライセンス</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    crawler_mujoco · Apache-2.0 ·
+    <a href="https://github.com/kotarokanazawa" target="_blank" rel="noopener noreferrer">GitHub @kotarokanazawa</a>
+  </footer>
+</body>
+</html>
