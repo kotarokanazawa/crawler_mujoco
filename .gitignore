@@ -1,0 +1,11 @@
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+install/
+log/
+results/
+.ros/
+*.log
