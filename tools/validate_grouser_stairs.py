@@ -12,7 +12,7 @@ import time
 import mujoco
 import numpy as np
 
-from mujoco_crawler import simulator as crawler
+from crawler_mujoco import simulator as crawler
 
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1]

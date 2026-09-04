@@ -15,7 +15,7 @@ def package_share_directory() -> Path:
         from ament_index_python.packages import get_package_share_directory
     except ImportError as error:
         raise RuntimeError(
-            "mujoco_crawler resources were not found; run from the source tree "
+            "crawler_mujoco resources were not found; run from the source tree "
             "or source the ROS 2 install workspace"
         ) from error
-    return Path(get_package_share_directory("mujoco_crawler"))
+    return Path(get_package_share_directory("crawler_mujoco"))

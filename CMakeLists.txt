@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
-project(mujoco_crawler)
+project(crawler_mujoco)
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
@@ -37,9 +37,9 @@ install(TARGETS truth_cloud_publisher voxel_overhang_removal
 )
 
 ament_python_install_package(${PROJECT_NAME})
-install(PROGRAMS scripts/mujoco_crawler DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/crawler_mujoco DESTINATION lib/${PROJECT_NAME})
 
-install(DIRECTORY launch config rviz assets docs
+install(DIRECTORY launch config rviz assets docs picture
   DESTINATION share/${PROJECT_NAME}
 )
 install(FILES requirements.txt DESTINATION share/${PROJECT_NAME})

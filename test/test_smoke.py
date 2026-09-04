@@ -6,8 +6,8 @@ import unittest
 
 import mujoco
 
-from mujoco_crawler import simulator as crawler
-from mujoco_crawler.arena import resolve_arena_path
+from crawler_mujoco import simulator as crawler
+from crawler_mujoco.arena import resolve_arena_path
 
 
 ROOT = Path(__file__).resolve().parents[1]

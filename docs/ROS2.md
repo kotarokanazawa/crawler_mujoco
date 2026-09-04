@@ -7,15 +7,15 @@ ROS 2 Humble を source したワークスペースでビルドします。
 ```bash
 source /opt/ros/humble/setup.bash
 cd /path/to/ros2_ws
-colcon build --symlink-install --packages-select mujoco_crawler
+colcon build --symlink-install --packages-select crawler_mujoco
 source install/setup.bash
 ```
 
 MuJoCo は ROS の Python と別の仮想環境に置けます。
 
 ```bash
-ros2 launch mujoco_crawler mujoco_ros2.launch.py \
-  python_executable:=/path/to/Mujoco_crawler/.venv/bin/python \
+ros2 launch crawler_mujoco crawler_mujoco.launch.py \
+  python_executable:=/path/to/crawler_mujoco/.venv/bin/python \
   shape:=rectangle
 ```
 
@@ -24,8 +24,8 @@ ros2 launch mujoco_crawler mujoco_ros2.launch.py \
 GUI群を起動せず、ROSブリッジ付きシミュレータだけを実行する場合:
 
 ```bash
-source /path/to/Mujoco_crawler/.venv/bin/activate
-ros2 run mujoco_crawler mujoco_crawler --shape rectangle --ros2
+source /path/to/crawler_mujoco/.venv/bin/activate
+ros2 run crawler_mujoco crawler_mujoco --shape rectangle --ros2
 ```
 
 ## Launch 引数
@@ -34,7 +34,7 @@ ros2 run mujoco_crawler mujoco_crawler --shape rectangle --ros2
 | --- | --- | --- |
 | `config` | package の `config/default.yaml` | 設定ファイル |
 | `python_executable` | source `.venv` または現在の Python | MuJoCo 実行 Python |
-| `output_directory` | `~/.ros/mujoco_crawler/results` | CSV/MJCF 出力先 |
+| `output_directory` | `~/.ros/crawler_mujoco/results` | CSV/MJCF 出力先 |
 | `shape` | `semicircle` | グローサ形状 |
 | `arena_yaml` | 設定ファイル値 | 同梱 arena YAML |
 | `mujoco_gui` | `true` | MuJoCo viewer |

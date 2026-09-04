@@ -52,4 +52,4 @@ fi
 "${SCRIPT_DIR}/.venv/bin/python" -m pip install --upgrade pip
 "${SCRIPT_DIR}/.venv/bin/python" -m pip install -r "${SCRIPT_DIR}/requirements.txt"
 echo "MuJoCo environment: ${SCRIPT_DIR}/.venv"
-echo "Run: ${SCRIPT_DIR}/.venv/bin/python ${SCRIPT_DIR}/scripts/mujoco_crawler --help"
+echo "Run: ${SCRIPT_DIR}/.venv/bin/python ${SCRIPT_DIR}/scripts/crawler_mujoco --help"

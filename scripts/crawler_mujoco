@@ -6,10 +6,10 @@ import sys
 
 
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
-if (SOURCE_ROOT / "mujoco_crawler" / "__init__.py").is_file():
+if (SOURCE_ROOT / "crawler_mujoco" / "__init__.py").is_file():
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from mujoco_crawler.simulator import main
+from crawler_mujoco.simulator import main
 
 
 if __name__ == "__main__":

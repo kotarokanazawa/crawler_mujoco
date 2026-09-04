@@ -16,18 +16,18 @@ from launch_ros.actions import Node
 
 LAUNCH_ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = LAUNCH_ROOT.parent
-if (SOURCE_ROOT / "mujoco_crawler" / "__init__.py").is_file():
-    # Direct source-tree launch: ros2 launch ./launch/mujoco_ros2.launch.py
+if (SOURCE_ROOT / "crawler_mujoco" / "__init__.py").is_file():
+    # Direct source-tree launch: ros2 launch ./launch/crawler_mujoco.launch.py
     PACKAGE_ROOT = SOURCE_ROOT
-    EXECUTABLE = SOURCE_ROOT / "scripts" / "mujoco_crawler"
+    EXECUTABLE = SOURCE_ROOT / "scripts" / "crawler_mujoco"
     sys.path.insert(0, str(SOURCE_ROOT))
 else:
-    # Installed package launch: ros2 launch mujoco_crawler mujoco_ros2.launch.py
-    prefix = Path(get_package_prefix("mujoco_crawler"))
-    PACKAGE_ROOT = prefix / "share" / "mujoco_crawler"
-    EXECUTABLE = prefix / "lib" / "mujoco_crawler" / "mujoco_crawler"
-from mujoco_crawler.robot_description import robot_description  # noqa: E402
-from mujoco_crawler.arena import resource_roots, resolve_arena_path  # noqa: E402
+    # Installed package launch: ros2 launch crawler_mujoco crawler_mujoco.launch.py
+    prefix = Path(get_package_prefix("crawler_mujoco"))
+    PACKAGE_ROOT = prefix / "share" / "crawler_mujoco"
+    EXECUTABLE = prefix / "lib" / "crawler_mujoco" / "crawler_mujoco"
+from crawler_mujoco.robot_description import robot_description  # noqa: E402
+from crawler_mujoco.arena import resource_roots, resolve_arena_path  # noqa: E402
 
 
 def as_bool(value):
@@ -69,27 +69,27 @@ def launch_setup(context):
         ExecuteProcess(cmd=command, output="screen", emulate_tty=True),
         Node(
             package="robot_state_publisher", executable="robot_state_publisher",
-            name="mujoco_robot_state_publisher", output="screen",
+            name="crawler_mujoco_robot_state_publisher", output="screen",
             parameters=[{"robot_description": description, "use_sim_time": True}],
             remappings=[("joint_states", "/crawler/joint_states")],
         ),
         Node(
             package="rqt_robot_steering", executable="rqt_robot_steering",
-            name="mujoco_robot_steering", output="screen",
+            name="crawler_mujoco_robot_steering", output="screen",
             condition=IfCondition(LaunchConfiguration("topic_gui")),
             remappings=[("/cmd_vel", "/target/cmd_vel")],
         ),
         Node(
             package="joint_state_publisher_gui", executable="joint_state_publisher_gui",
-            name="mujoco_flipper_joint_gui", output="screen",
+            name="crawler_mujoco_flipper_joint_gui", output="screen",
             condition=IfCondition(LaunchConfiguration("flipper_gui")),
             parameters=[{"robot_description": description, "use_sim_time": False}],
             remappings=[("joint_states", "/target/joint_states")],
         ),
         Node(
-            package="rviz2", executable="rviz2", name="mujoco_rviz2", output="screen",
+            package="rviz2", executable="rviz2", name="crawler_mujoco_rviz2", output="screen",
             condition=IfCondition(LaunchConfiguration("rviz")),
-            arguments=["-d", str(PACKAGE_ROOT / "rviz" / "mujoco.rviz")],
+            arguments=["-d", str(PACKAGE_ROOT / "rviz" / "crawler_mujoco.rviz")],
             parameters=[{"use_sim_time": True}],
         ),
     ]
@@ -97,8 +97,8 @@ def launch_setup(context):
         resolution = float(LaunchConfiguration("cloud_resolution").perform(context))
         actions.extend([
             Node(
-                package="mujoco_crawler", executable="truth_cloud_publisher",
-                name="mujoco_truth_cloud_publisher",
+                package="crawler_mujoco", executable="truth_cloud_publisher",
+                name="crawler_mujoco_truth_cloud_publisher",
                 output="screen",
                 parameters=[{
                     "arena_yaml": str(arena_path),
@@ -110,8 +110,8 @@ def launch_setup(context):
                 }],
             ),
             Node(
-                package="mujoco_crawler", executable="voxel_overhang_removal",
-                name="mujoco_truth_cloud_filter",
+                package="crawler_mujoco", executable="voxel_overhang_removal",
+                name="crawler_mujoco_truth_cloud_filter",
                 output="screen",
                 parameters=[{
                     "input_topic": "/octomap_pointcloud",
@@ -135,7 +135,7 @@ def generate_launch_description():
             description="Python containing mujoco; empty selects source .venv or ROS Python"),
         DeclareLaunchArgument(
             "output_directory",
-            default_value=str(Path.home() / ".ros" / "mujoco_crawler" / "results")),
+            default_value=str(Path.home() / ".ros" / "crawler_mujoco" / "results")),
         DeclareLaunchArgument("shape", default_value="semicircle",
                               description="none, rectangle, semicircle, or spike"),
         DeclareLaunchArgument("arena_yaml", default_value=""),
