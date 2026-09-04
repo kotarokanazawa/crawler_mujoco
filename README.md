@@ -2,7 +2,8 @@
 
 ![MuJoCoで段差を走行するフリッパ付きクローラ](picture/image.png)
 
-[プロジェクトページ](index.html) · [English version](index.en.html) ·
+[プロジェクトページ](https://kotarokanazawa.github.io/crawler_mujoco/) ·
+[English version](https://kotarokanazawa.github.io/crawler_mujoco/index.en.html) ·
 [GitHub @kotarokanazawa](https://github.com/kotarokanazawa)
 
 フリッパ付きクローラを MuJoCo で走行させる、単体実行可能なシミュレータです。
