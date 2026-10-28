@@ -1,0 +1,43 @@
+simulation:
+  timestep: 0.001
+  duration: 0.0
+  render_fps: 30
+  show_contacts: false
+  integrator: implicitfast
+
+robot_config: robot.yaml
+
+sensors:
+  rgbd:
+    enabled: true
+    width: 320
+    height: 240
+    publish_rate: 5.0
+    fovy_deg: 70.0
+    downward_pitch_deg: 20.0
+    grayscale_max_depth: 8.0
+    pointcloud_stride: 1
+    front_position: [0.275, 0.0, 0.065]
+    rear_position: [-0.275, 0.0, 0.065]
+
+grouser:
+  shape: semicircle
+  elements_per_round: 40
+  width: 0.020
+  height: 0.018
+  friction: [3.0, 0.05, 0.005]
+  longitudinal_friction: 3.0
+  lateral_friction: 0.60
+  solref: [0.008, 1.0]
+  solimp: [0.95, 0.99, 0.001]
+
+environment:
+  friction: [2.5, 0.05, 0.005]
+  arena_ground_z: 0.0
+  builtin_ground_z: -0.08
+  arena_yaml: overhang_environment.yaml
+  bridge_start_x: -3.0
+  bridge_end_x: -1.0
+  bridge_width: 1.2
+  bridge_thickness: 0.06
+  target_x: 3.0

@@ -37,7 +37,8 @@ install(TARGETS truth_cloud_publisher voxel_overhang_removal
 )
 
 ament_python_install_package(${PROJECT_NAME})
-install(PROGRAMS scripts/crawler_mujoco DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/crawler_mujoco scripts/crawler_environment_editor
+  DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch config rviz assets docs picture
   DESTINATION share/${PROJECT_NAME}

@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""Command-line entry point for the crawler MuJoCo environment editor."""
+
+from pathlib import Path
+import sys
+
+SOURCE_ROOT = Path(__file__).resolve().parents[1]
+if (SOURCE_ROOT / "crawler_mujoco" / "__init__.py").is_file():
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+from crawler_mujoco.environment_editor import main
+
+if __name__ == "__main__":
+    main()

@@ -309,6 +309,13 @@ class CrawlerMujocoRosNode(Node):
         transform.transform.rotation.z = float(quaternion[3])
         self.tf_broadcaster.sendTransform(transform)
 
+    def publish_clock(self, simulation_time: float) -> None:
+        seconds = int(simulation_time)
+        clock = Clock()
+        clock.clock.sec = seconds
+        clock.clock.nanosec = int((simulation_time - seconds) * 1_000_000_000)
+        self.clock_pub.publish(clock)
+
 
 class Ros2Bridge:
     def __init__(self, cfg: dict):
@@ -324,6 +331,9 @@ class Ros2Bridge:
 
     def publish_state(self, model, data) -> None:
         self.node.publish_state(model, data)
+
+    def publish_clock(self, simulation_time: float) -> None:
+        self.node.publish_clock(simulation_time)
 
     def close(self) -> None:
         if self.node.renderer is not None:

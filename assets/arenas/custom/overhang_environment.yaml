@@ -1,0 +1,172 @@
+robocup_arena:
+  objects:
+    overhang_desk_1:
+      x: 1.2
+      y: -2.25
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_ko_1:
+      x: 1.2
+      y: -0.75
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_nego_1:
+      x: 1.2
+      y: 0.75
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_tunnel_1:
+      x: 1.2
+      y: 2.25
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_desk_half_height_1:
+      x: 2.7
+      y: -2.25
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_ko_half_height_1:
+      x: 2.7
+      y: -0.75
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_nego_half_height_1:
+      x: 2.7
+      y: 0.75
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    overhang_tunnel_half_height_1:
+      x: 2.7
+      y: 2.25
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    wall100single_1:
+      x: -1.0
+      y: 0.0
+      z: 0.5
+      roll: 60.0
+      pitch: 0.0
+      yaw: 90.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    wall100single_2:
+      x: -0.7
+      y: 2.0
+      z: 1.0
+      roll: 60.0
+      pitch: 10.0
+      yaw: 90.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    stair45degwithcatwalk_1:
+      x: -2.7800000000000002
+      y: 1.8800000000000001
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    stair45deg_1:
+      x: -2.7600000000000002
+      y: 0.04
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 0.5
+    stair45deg_2:
+      x: -2.4600000000000004
+      y: -2.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 2.0
+    continuesramp_1:
+      x: -2.0
+      y: -3.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    wall_1:
+      x: 0.0
+      y: -8.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    stepfield_1:
+      x: -1.0
+      y: -1.5
+      z: 0.0
+      roll: 90.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0
+    krails_1:
+      x: 1.5
+      y: -3.0
+      z: 0.0
+      roll: 60.0
+      pitch: 0.0
+      yaw: 0.0
+      scale_x: 1.0
+      scale_y: 1.0
+      scale_z: 1.0

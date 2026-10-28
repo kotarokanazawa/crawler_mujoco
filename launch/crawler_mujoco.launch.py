@@ -62,39 +62,47 @@ def launch_setup(context):
         command.append("--gui")
     if as_bool(LaunchConfiguration("show_contacts").perform(context)):
         command.append("--show-contacts")
+    spawn_robot = as_bool(LaunchConfiguration("spawn_robot").perform(context))
+    if not spawn_robot:
+        command.append("--no-robot")
     if arena:
         command.extend(("--arena-yaml", arena))
 
-    actions = [
-        ExecuteProcess(cmd=command, output="screen", emulate_tty=True),
-        Node(
+    actions = [ExecuteProcess(cmd=command, output="screen", emulate_tty=True)]
+    if spawn_robot:
+        actions.extend([
+          Node(
             package="robot_state_publisher", executable="robot_state_publisher",
             name="crawler_mujoco_robot_state_publisher", output="screen",
             parameters=[{"robot_description": description, "use_sim_time": True}],
             remappings=[("joint_states", "/crawler/joint_states")],
-        ),
+          ),
         Node(
             package="rqt_robot_steering", executable="rqt_robot_steering",
             name="crawler_mujoco_robot_steering", output="screen",
             condition=IfCondition(LaunchConfiguration("topic_gui")),
             remappings=[("/cmd_vel", "/target/cmd_vel")],
-        ),
+          ),
         Node(
             package="joint_state_publisher_gui", executable="joint_state_publisher_gui",
             name="crawler_mujoco_flipper_joint_gui", output="screen",
             condition=IfCondition(LaunchConfiguration("flipper_gui")),
             parameters=[{"robot_description": description, "use_sim_time": False}],
             remappings=[("joint_states", "/target/joint_states")],
-        ),
+          ),
+        ])
+    actions.append(
         Node(
             package="rviz2", executable="rviz2", name="crawler_mujoco_rviz2", output="screen",
             condition=IfCondition(LaunchConfiguration("rviz")),
             arguments=["-d", str(PACKAGE_ROOT / "rviz" / "crawler_mujoco.rviz")],
             parameters=[{"use_sim_time": True}],
-        ),
-    ]
+        ))
     if as_bool(LaunchConfiguration("publish_truth_cloud").perform(context)) and arena_path:
         resolution = float(LaunchConfiguration("cloud_resolution").perform(context))
+        pointcloud_mode = LaunchConfiguration("pointcloud_mode").perform(context).lower()
+        if pointcloud_mode not in ("2.5d", "3d_voxel"):
+            raise ValueError("pointcloud_mode must be '2.5d' or '3d_voxel'")
         actions.extend([
             Node(
                 package="crawler_mujoco", executable="truth_cloud_publisher",
@@ -108,16 +116,18 @@ def launch_setup(context):
                     "plane_step": resolution,
                     "publish_period": 2.0,
                 }],
+                remappings=[("octomap_pointcloud", "/octomap_pointcloud/raw")],
             ),
             Node(
                 package="crawler_mujoco", executable="voxel_overhang_removal",
                 name="crawler_mujoco_truth_cloud_filter",
                 output="screen",
                 parameters=[{
-                    "input_topic": "/octomap_pointcloud",
-                    "output_topic": "/octomap_pointcloud/filtering",
+                    "input_topic": "/octomap_pointcloud/raw",
+                    "output_topic": "/octomap_pointcloud",
                     "voxel_size": max(0.05, resolution),
                     "height_mode": "max",
+                    "dimension_mode": pointcloud_mode,
                     "durability": "transient_local",
                     "use_sim_time": True,
                 }],
@@ -138,11 +148,15 @@ def generate_launch_description():
             default_value=str(Path.home() / ".ros" / "crawler_mujoco" / "results")),
         DeclareLaunchArgument("shape", default_value="semicircle",
                               description="none, rectangle, semicircle, or spike"),
-        DeclareLaunchArgument("arena_yaml", default_value=""),
+        DeclareLaunchArgument("arena_yaml", default_value="benchmark.yaml"),
         DeclareLaunchArgument("mujoco_gui", default_value="true"),
         DeclareLaunchArgument("show_contacts", default_value="false"),
         DeclareLaunchArgument("publish_truth_cloud", default_value="true"),
+        DeclareLaunchArgument("spawn_robot", default_value="true"),
         DeclareLaunchArgument("cloud_resolution", default_value="0.025"),
+        DeclareLaunchArgument(
+            "pointcloud_mode", default_value="2.5d",
+            description="Published cloud representation: 2.5d or 3d_voxel"),
         DeclareLaunchArgument("topic_gui", default_value="true"),
         DeclareLaunchArgument("flipper_gui", default_value="true"),
         DeclareLaunchArgument("rviz", default_value="true"),

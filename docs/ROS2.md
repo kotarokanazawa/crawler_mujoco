@@ -40,7 +40,9 @@ ros2 run crawler_mujoco crawler_mujoco --shape rectangle --ros2
 | `mujoco_gui` | `true` | MuJoCo viewer |
 | `show_contacts` | `false` | 接触表示 |
 | `publish_truth_cloud` | `true` | arena 真値点群。arena 未指定時は起動しない |
+| `spawn_robot` | `true` | crawler robotをMuJoCo sceneへspawnする |
 | `cloud_resolution` | `0.025` | 真値点群解像度 [m] |
+| `pointcloud_mode` | `2.5d` | `2.5d`または`3d_voxel`。3Dはvoxel中心に最も近い実表面点を出力。オーバーハング環境は`3d_voxel`が既定値 |
 | `topic_gui` | `true` | `rqt_robot_steering` |
 | `flipper_gui` | `true` | `joint_state_publisher_gui` |
 | `rviz` | `true` | RViz2 |
@@ -59,7 +61,7 @@ ros2 run crawler_mujoco crawler_mujoco --shape rectangle --ros2
 - `/odom` (`nav_msgs/msg/Odometry`)
 - `/imu/data`, `/crawler/imu` (`sensor_msgs/msg/Imu`)
 - `/clock` (`rosgraph_msgs/msg/Clock`)
-- `/octomap_pointcloud`, `/octomap_pointcloud/filtering` (arena 指定時)
+- `/octomap_pointcloud`（選択したvoxel点群）、`/octomap_pointcloud/raw`（処理前点群、arena指定時）
 - `/camera/front/*`, `/camera/rear/*`, `/camera/points` (`sensors.rgbd.enabled: true` 時)
 
 フリッパ配列の順序は左前、左後、右前、右後で、値は rad です。

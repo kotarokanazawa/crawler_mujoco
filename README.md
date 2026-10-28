@@ -83,6 +83,24 @@ source install/setup.bash
 ros2 launch crawler_mujoco crawler_mujoco.launch.py shape:=semicircle
 ```
 
+### 環境エディタ
+
+ブラウザ上でモデルの追加、マウスドラッグによる配置、座標・回転・スケールの
+数値編集、MuJoCo rendererによる3Dプレビュー、arena YAMLの保存と再読込ができます。
+
+```bash
+ros2 launch crawler_mujoco environment_editor.launch.py
+```
+
+保存先は`assets/arenas/custom/`です。保存後に画面へ表示された絶対パスを
+`arena_yaml`へ渡して実行できます。
+詳しい操作方法は[docs/ENVIRONMENT_EDITOR.md](docs/ENVIRONMENT_EDITOR.md)を参照してください。
+
+```bash
+ros2 launch crawler_mujoco crawler_mujoco.launch.py \
+  arena_yaml:=/absolute/path/to/custom_environment.yaml
+```
+
 シミュレータだけを起動する場合は `ros2 run` も使用できます。
 
 ```bash
@@ -93,6 +111,33 @@ arena を使う場合は launch に
 `python_executable:=/path/to/crawler_mujoco/.venv/bin/python` と
 `arena_yaml:=benchmark.yaml` を渡します。詳しい topic、launch 引数、依存パッケージは
 [docs/ROS2.md](docs/ROS2.md) を参照してください。
+
+custom側の`overhang_environment.yaml`（オーバーハング、wall、stair）と
+3D truth point cloudを起動する場合は次を実行します。このlaunchは
+`crawler_mujoco`内だけで完結します。
+
+```bash
+ros2 launch crawler_mujoco overhang_environment.launch.py
+```
+
+環境エディタで保存した`assets/arenas/custom/`内のYAMLも指定できます。
+
+```bash
+ros2 launch crawler_mujoco overhang_environment.launch.py \
+  arena_yaml:=custom/my_environment.yaml
+```
+
+`arena_yaml`には絶対パスも指定できます。
+
+点群は `/octomap_pointcloud`（`map` frame）へpublishされます。
+この環境ではオーバーハングを保持する`pointcloud_mode:=3d_voxel`が既定値です。
+`3d_voxel`は各XYZ voxelの中心に最も近い実入力表面点を代表点にします。
+新しい点をvoxel中心や重心へ生成しないため、柱や曲面の内部へ入り込みません。
+`pointcloud_mode:=2.5d`を指定すると、各XY voxelにつき最高点だけを出力します。
+ロボットは既定ではspawnしません。必要な場合は`spawn_robot:=true`を指定します。
+GUIを使わない検証では
+`mujoco_gui:=false topic_gui:=false flipper_gui:=false rviz:=false`
+を指定できます。
 
 ## 設定と出力
 

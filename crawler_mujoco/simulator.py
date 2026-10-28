@@ -330,6 +330,7 @@ def build_xml(cfg: dict, shape: str) -> str:
     if shape not in SHAPES:
         raise ValueError(f"shape must be one of: {', '.join(SHAPES)}")
     sim, robot, env = cfg["simulation"], cfg["robot"], cfg["environment"]
+    spawn_robot = bool(env.get("spawn_robot", True))
     sx, sy, sz = (float(x) for x in robot["chassis_size"])
     x_positions = (-float(robot["wheelbase"]) / 2, float(robot["wheelbase"]) / 2)
     y_positions = (-float(robot["track_separation"]) / 2, float(robot["track_separation"]) / 2)
@@ -405,6 +406,33 @@ def build_xml(cfg: dict, shape: str) -> str:
     <geom name="bridge" type="box" pos="{bridge_center:.9g} 0 {-float(env['bridge_thickness'])/2:.9g}"
           size="{bridge_half_length:.9g} {float(env['bridge_width'])/2:.9g} {float(env['bridge_thickness'])/2:.9g}"
           material="bridge_mat" friction="{f3(env.get('friction', (2.5, 0.05, 0.005)))}" contype="1" conaffinity="2"/>'''
+    robot_xml = ""
+    actuator_xml = ""
+    sensor_xml = ""
+    if spawn_robot:
+        robot_xml = f'''
+    <body name="crawler" pos="{float(robot['spawn_x']):.9g} {float(robot['spawn_y']):.9g} {spawn_z:.9g}">
+      <freejoint name="root"/>
+      <inertial pos="0 0 {sz/2:.9g}" mass="{float(robot['chassis_mass']):.9g}" diaginertia="0.22 0.42 0.45"/>
+      <geom name="chassis" type="box" pos="0 0 {sz/2:.9g}" size="{sx/2:.9g} {sy/2:.9g} {sz/2:.9g}"
+            rgba="0.78 0.42 0.08 1" contype="2" conaffinity="1"/>
+      <site name="imu" pos="{f3(imu_position)}" size="0.01"/>
+      {camera_xml}
+      {''.join(wheels)}
+      {''.join(straight_sections)}
+      {flipper_bodies}
+    </body>'''
+        actuator_xml = f'''<actuator>{''.join(actuators)}{flipper_actuators}
+    <velocity name="skid_steer_yaw_motor" joint="root" gear="0 0 0 0 0 1"
+              kv="{yaw_kv:.9g}" ctrlrange="{-float(robot['max_commanded_angular_speed']):.9g} {float(robot['max_commanded_angular_speed']):.9g}"
+              forcerange="{-max_yaw_torque:.9g} {max_yaw_torque:.9g}"/>
+  </actuator>'''
+        sensor_xml = '''<sensor>
+    <framepos name="body_position" objtype="body" objname="crawler"/>
+    <framequat name="body_orientation" objtype="body" objname="crawler"/>
+    <gyro name="body_gyro" site="imu"/>
+    <accelerometer name="body_acceleration" site="imu"/>
+  </sensor>'''
     return f'''<mujoco model="crawler_{escape(shape)}">
   <compiler angle="degree" autolimits="true"/>
   <option timestep="{float(sim['timestep']):.9g}" integrator="{escape(str(sim['integrator']))}" gravity="0 0 -9.81" cone="elliptic"/>
@@ -426,29 +454,10 @@ def build_xml(cfg: dict, shape: str) -> str:
     <light directional="true" pos="3 2 4" dir="-0.4 -0.2 -1" ambient="0.05 0.05 0.06" diffuse="0.34 0.36 0.42" specular="0.03 0.03 0.03"/>
     <geom name="lower_ground" type="plane" pos="0 0 {ground_z:.9g}" size="20 20 0.1" rgba="0.34 0.39 0.30 1" friction="{f3(env.get('friction', (2.5, 0.05, 0.005)))}" contype="1" conaffinity="2"/>
     {environment_xml}
-    <body name="crawler" pos="{float(robot['spawn_x']):.9g} {float(robot['spawn_y']):.9g} {spawn_z:.9g}">
-      <freejoint name="root"/>
-      <inertial pos="0 0 {sz/2:.9g}" mass="{float(robot['chassis_mass']):.9g}" diaginertia="0.22 0.42 0.45"/>
-      <geom name="chassis" type="box" pos="0 0 {sz/2:.9g}" size="{sx/2:.9g} {sy/2:.9g} {sz/2:.9g}"
-            rgba="0.78 0.42 0.08 1" contype="2" conaffinity="1"/>
-      <site name="imu" pos="{f3(imu_position)}" size="0.01"/>
-      {camera_xml}
-      {''.join(wheels)}
-      {''.join(straight_sections)}
-      {flipper_bodies}
-    </body>
+    {robot_xml}
   </worldbody>
-  <actuator>{''.join(actuators)}{flipper_actuators}
-    <velocity name="skid_steer_yaw_motor" joint="root" gear="0 0 0 0 0 1"
-              kv="{yaw_kv:.9g}" ctrlrange="{-float(robot['max_commanded_angular_speed']):.9g} {float(robot['max_commanded_angular_speed']):.9g}"
-              forcerange="{-max_yaw_torque:.9g} {max_yaw_torque:.9g}"/>
-  </actuator>
-  <sensor>
-    <framepos name="body_position" objtype="body" objname="crawler"/>
-    <framequat name="body_orientation" objtype="body" objname="crawler"/>
-    <gyro name="body_gyro" site="imu"/>
-    <accelerometer name="body_acceleration" site="imu"/>
-  </sensor>
+  {actuator_xml}
+  {sensor_xml}
 </mujoco>'''
 
 
@@ -642,8 +651,10 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
     (output / f"crawler_{shape}.xml").write_text(xml, encoding="utf-8")
     model = mujoco.MjModel.from_xml_string(xml)
     data = mujoco.MjData(model)
-    set_velocity_controls(model, data, cfg, float(cfg["robot"]["commanded_linear_speed"]), 0.0)
-    set_flipper_controls(model, data, cfg, (0.0, 0.0, 0.0, 0.0))
+    spawn_robot = bool(cfg["environment"].get("spawn_robot", True))
+    if spawn_robot:
+        set_velocity_controls(model, data, cfg, float(cfg["robot"]["commanded_linear_speed"]), 0.0)
+        set_flipper_controls(model, data, cfg, (0.0, 0.0, 0.0, 0.0))
     duration = (math.inf if control_state is not None or ros_bridge is not None
                 else float(cfg["simulation"]["duration"]))
     rows, viewer = [], None
@@ -664,11 +675,11 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
         while (not stop_event.is_set() and data.time < duration
                and (viewer is None or viewer.is_running())):
             before = time.perf_counter()
-            if ros_bridge is not None:
+            if ros_bridge is not None and spawn_robot:
                 linear, angular, flippers = ros_bridge.commands()
                 set_velocity_controls(model, data, cfg, linear, angular)
                 set_flipper_controls(model, data, cfg, flippers)
-            if control_state is not None:
+            if control_state is not None and spawn_robot:
                 linear, angular, paused, running, reset = control_state.command()
                 if not running:
                     break
@@ -682,13 +693,14 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
                         viewer.sync()
                     time.sleep(0.01)
                     continue
-            wrap_straight_sections(model, data, cfg)
-            update_track_velocity_controls(model, data, cfg)
-            update_flipper_controls(model, data, cfg)
+            if spawn_robot:
+                wrap_straight_sections(model, data, cfg)
+                update_track_velocity_controls(model, data, cfg)
+                update_flipper_controls(model, data, cfg)
             step_physics(model, data, cfg)
-            if control_state is not None:
+            if control_state is not None and spawn_robot:
                 control_state.update_pose(data.time, data.sensor("body_position").data[0])
-            if data.time >= next_sample:
+            if data.time >= next_sample and spawn_robot:
                 count, normal, tangential = contact_forces(model, data)
                 position = data.sensor("body_position").data.copy()
                 quat = data.sensor("body_orientation").data.copy()
@@ -696,6 +708,10 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
                              count, normal, tangential))
                 if ros_bridge is not None:
                     ros_bridge.publish_state(model, data)
+                next_sample += sample_period
+            elif data.time >= next_sample:
+                if ros_bridge is not None:
+                    ros_bridge.publish_clock(data.time)
                 next_sample += sample_period
             if viewer is not None:
                 viewer.sync()
@@ -706,13 +722,18 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
     finally:
         if viewer is not None:
             viewer.close()
-    if not rows:
+    if not rows and spawn_robot:
         mujoco.mj_forward(model, data)
         count, normal, tangential = contact_forces(model, data)
         position = data.sensor("body_position").data.copy()
         quat = data.sensor("body_orientation").data.copy()
         rows.append((data.time, *position, pitch_from_quaternion(quat),
                      count, normal, tangential))
+    if not spawn_robot:
+        return {"shape": shape, "final_x_m": float("nan"),
+                "max_abs_pitch_deg": float("nan"),
+                "bridge_max_abs_pitch_deg": float("nan"), "max_z_m": float("nan"),
+                "reached_target": False, "target_time_s": float("nan"), "csv": ""}
     csv_path = output / f"{shape}.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
@@ -743,6 +764,8 @@ def main() -> None:
     parser.add_argument("--ui-port", type=int, default=8765)
     parser.add_argument("--arena-yaml", default=None,
                         help="Bundled arena YAML name/path (for example singlerane/bridge.yaml)")
+    parser.add_argument("--no-robot", action="store_true",
+                        help="Run the environment without spawning the crawler robot")
     parser.add_argument("--ros2", action="store_true",
                         help="Enable /cmd_vel, flipper commands, joint_states, odom, and clock")
     parser.add_argument("--output", type=Path, default=Path.cwd() / "results")
@@ -751,6 +774,8 @@ def main() -> None:
     cfg = load_config(args.config)
     if args.arena_yaml is not None:
         cfg["environment"]["arena_yaml"] = args.arena_yaml
+    if args.no_robot:
+        cfg["environment"]["spawn_robot"] = False
     selected = args.shape or cfg["grouser"]["shape"]
     shapes = SHAPES if selected == "all" else (selected,)
     if (args.gui or args.control_ui or args.ros2) and len(shapes) != 1:
@@ -771,7 +796,10 @@ def main() -> None:
     if args.ros2:
         from .ros_bridge import Ros2Bridge
         ros_bridge = Ros2Bridge(cfg)
-        print("ROS 2: /cmd_vel and /crawler/flipper_commands enabled")
+        if bool(cfg["environment"].get("spawn_robot", True)):
+            print("ROS 2: /cmd_vel and /crawler/flipper_commands enabled")
+        else:
+            print("ROS 2: environment clock enabled; crawler robot is not spawned")
     stop_event = threading.Event()
     try:
         results = []

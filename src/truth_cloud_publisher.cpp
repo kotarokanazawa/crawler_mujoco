@@ -34,6 +34,7 @@ public:
     plane_size_ = declare_parameter<double>("plane_size", 10.0);
     plane_step_ = declare_parameter<double>("plane_step", resolution_);
     publish_period_ = declare_parameter<double>("publish_period", 2.0);
+    publish_once_ = declare_parameter<bool>("publish_once", false);
     arena_yaml_ = declare_parameter<std::string>("arena_yaml", "");
     model_root_ = declare_parameter<std::string>("model_root", "");
     default_object_size_x_ = declare_parameter<double>("default_object_size_x", 0.8);
@@ -548,6 +549,7 @@ private:
     msg.header.frame_id = "map";
     msg.header.stamp = now();
     cloud_pub_->publish(msg);
+    if (publish_once_) timer_->cancel();
 
     RCLCPP_INFO_THROTTLE(
       get_logger(), *get_clock(), 10000,
@@ -564,6 +566,7 @@ private:
   double plane_size_;
   double plane_step_;
   double publish_period_;
+  bool publish_once_;
   double default_object_size_x_;
   double default_object_size_y_;
   double default_object_size_z_;

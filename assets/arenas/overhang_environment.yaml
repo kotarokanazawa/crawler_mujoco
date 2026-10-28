@@ -1,0 +1,16 @@
+robocup_arena:
+  objects:
+    # STLをX軸まわりに+90度補正し、各モデルの基準辺を1.2 mにしている。
+    # Y方向へ1.5 m間隔で配置し、モデル同士の重なりを避ける。
+    overhang_desk_1:   {x: 1.20, y: -2.25, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+    overhang_ko_1:     {x: 1.20, y: -0.75, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+    overhang_nego_1:   {x: 1.20, y:  0.75, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+    overhang_tunnel_1: {x: 1.20, y:  2.25, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+
+    # 各モデルの後方（+X側）に高さ0.5倍版を配置する。
+    # 専用SDF内でSTLローカルYを0.5倍し、世界座標の高さだけを
+    # 1.2 mから0.6 mへ縮小する。MuJoCo geometryとtruth cloudで同じ形になる。
+    overhang_desk_half_height_1:   {x: 2.70, y: -2.25, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+    overhang_ko_half_height_1:     {x: 2.70, y: -0.75, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+    overhang_nego_half_height_1:   {x: 2.70, y:  0.75, z: 0.0, roll: 0, pitch: 0, yaw: 0}
+    overhang_tunnel_half_height_1: {x: 2.70, y:  2.25, z: 0.0, roll: 0, pitch: 0, yaw: 0}
