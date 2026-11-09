@@ -59,3 +59,7 @@ environment:
   bridge_width: 1.2
   bridge_thickness: 0.06
   target_x: 3.0
+
+visualization:
+  # RViz contact-force arrow length [m/N].
+  contact_force_scale: 0.001

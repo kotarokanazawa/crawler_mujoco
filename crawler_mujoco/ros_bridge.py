@@ -8,7 +8,7 @@ import math
 import mujoco
 import numpy as np
 import rclpy
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Point, TransformStamped, Twist
 from nav_msgs.msg import Odometry
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
@@ -16,8 +16,8 @@ from rclpy.signals import SignalHandlerOptions
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo, Image, Imu, JointState, PointCloud2, PointField
 from std_msgs.msg import Float64MultiArray
-from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
+from visualization_msgs.msg import Marker, MarkerArray
 
 
 FLIPPER_JOINTS = (
@@ -41,6 +41,14 @@ class CrawlerMujocoRosNode(Node):
                                  self._target_joint_states, 10)
         self.joint_pub = self.create_publisher(JointState, "/joint_states", 10)
         self.crawler_joint_pub = self.create_publisher(JointState, "/crawler/joint_states", 10)
+        self.flipper_torque_pub = self.create_publisher(
+            Float64MultiArray, "/crawler/flipper_torques", 10)
+        self.contact_pub = self.create_publisher(
+            Float64MultiArray, "/crawler/contacts", 10)
+        self.contact_marker_pub = self.create_publisher(
+            MarkerArray, "/crawler/contact_markers", 10)
+        self.contact_force_scale = float(
+            cfg.get("visualization", {}).get("contact_force_scale", 0.001))
         self.odom_pub = self.create_publisher(Odometry, "/odom", 10)
         self.imu_pub = self.create_publisher(Imu, "/imu/data", 10)
         self.crawler_imu_pub = self.create_publisher(Imu, "/crawler/imu", 10)
@@ -251,10 +259,45 @@ class CrawlerMujocoRosNode(Node):
             joints.name.append(name)
             joints.position.append(float(data.qpos[model.jnt_qposadr[joint_id]]))
             joints.velocity.append(float(data.qvel[model.jnt_dofadr[joint_id]]))
+            actuator_id = mujoco.mj_name2id(
+                model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{name}_position")
+            joints.effort.append(
+                float(data.actuator_force[actuator_id]) if actuator_id >= 0 else 0.0)
         self.joint_pub.publish(joints)
         self.crawler_joint_pub.publish(joints)
+        torques = Float64MultiArray()
+        torques.layout.dim.append(self._array_dimension("flippers", 4, 4))
+        torques.data = list(joints.effort)
+        self.flipper_torque_pub.publish(torques)
 
         position = data.sensor("body_position").data
+        crawler_id = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_BODY, "crawler")
+        world_from_base = np.asarray(
+            data.xmat[crawler_id], dtype=np.float64).reshape(3, 3)
+
+        # One row per active contact in map coordinates:
+        # [position_x, position_y, position_z, force_x, force_y, force_z].
+        # mj_contactForce returns the force in MuJoCo's contact frame, whose
+        # axes are stored as rows in contact.frame.
+        contacts = Float64MultiArray()
+        contacts.layout.dim = []
+        force_contact = np.zeros(6, dtype=np.float64)
+        for index in range(data.ncon):
+            contact = data.contact[index]
+            mujoco.mj_contactForce(model, data, index, force_contact)
+            frame = np.asarray(contact.frame, dtype=np.float64).reshape(3, 3)
+            force_world = frame.T @ force_contact[:3]
+            contacts.data.extend(float(value) for value in (
+                *contact.pos, *force_world))
+        contacts.layout.data_offset = 0
+        contacts.layout.dim.append(self._array_dimension(
+            "contacts", data.ncon, data.ncon * 6))
+        contacts.layout.dim.append(self._array_dimension("fields", 6, 6))
+        self.contact_pub.publish(contacts)
+        self.contact_marker_pub.publish(self._contact_markers(
+            model, data, stamp, position, world_from_base))
+
         quaternion = data.sensor("body_orientation").data  # MuJoCo w, x, y, z
         odom = Odometry()
         odom.header.stamp = stamp
@@ -308,6 +351,74 @@ class CrawlerMujocoRosNode(Node):
         transform.transform.rotation.y = float(quaternion[2])
         transform.transform.rotation.z = float(quaternion[3])
         self.tf_broadcaster.sendTransform(transform)
+
+    def _contact_markers(self, model, data, stamp, position,
+                         world_from_base: np.ndarray) -> MarkerArray:
+        """Represent active contacts as base_link-relative points and arrows."""
+        result = MarkerArray()
+        clear = Marker()
+        clear.action = Marker.DELETEALL
+        result.markers.append(clear)
+
+        points = Marker()
+        points.header.stamp = stamp
+        points.header.frame_id = "base_link"
+        points.ns = "contact_points"
+        points.id = 0
+        points.type = Marker.SPHERE_LIST
+        points.action = Marker.ADD
+        points.pose.orientation.w = 1.0
+        points.scale.x = points.scale.y = points.scale.z = 0.025
+        points.color.r, points.color.g, points.color.b, points.color.a = (
+            1.0, 0.2, 0.05, 1.0)
+
+        force_contact = np.zeros(6, dtype=np.float64)
+        base_from_world = world_from_base.T
+        for index in range(data.ncon):
+            contact = data.contact[index]
+            mujoco.mj_contactForce(model, data, index, force_contact)
+            contact_frame = np.asarray(
+                contact.frame, dtype=np.float64).reshape(3, 3)
+            force_world = contact_frame.T @ force_contact[:3]
+            point_base = base_from_world @ (
+                np.asarray(contact.pos, dtype=np.float64) - position)
+            force_base = base_from_world @ force_world
+
+            start = Point()
+            start.x, start.y, start.z = map(float, point_base)
+            points.points.append(start)
+
+            end = Point()
+            end_vector = point_base + self.contact_force_scale * force_base
+            end.x, end.y, end.z = map(float, end_vector)
+            arrow = Marker()
+            arrow.header.stamp = stamp
+            arrow.header.frame_id = "base_link"
+            arrow.ns = "contact_forces"
+            arrow.id = index
+            arrow.type = Marker.ARROW
+            arrow.action = Marker.ADD
+            arrow.pose.orientation.w = 1.0
+            arrow.points = [start, end]
+            arrow.scale.x = 0.012
+            arrow.scale.y = 0.025
+            arrow.scale.z = 0.035
+            arrow.color.r, arrow.color.g, arrow.color.b, arrow.color.a = (
+                0.1, 0.75, 1.0, 0.9)
+            result.markers.append(arrow)
+
+        result.markers.append(points)
+        return result
+
+    @staticmethod
+    def _array_dimension(label: str, size: int, stride: int):
+        """Build a MultiArrayDimension without importing another message module."""
+        from std_msgs.msg import MultiArrayDimension
+        dimension = MultiArrayDimension()
+        dimension.label = label
+        dimension.size = size
+        dimension.stride = stride
+        return dimension
 
     def publish_clock(self, simulation_time: float) -> None:
         seconds = int(simulation_time)

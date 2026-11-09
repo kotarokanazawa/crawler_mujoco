@@ -57,7 +57,14 @@ ros2 run crawler_mujoco crawler_mujoco --shape rectangle --ros2
 
 配信:
 
-- `/joint_states`, `/crawler/joint_states` (`sensor_msgs/msg/JointState`)
+- `/joint_states`, `/crawler/joint_states` (`sensor_msgs/msg/JointState`。`effort` はフリッパ関節トルク [N m])
+- `/crawler/flipper_torques` (`std_msgs/msg/Float64MultiArray`)。4要素の関節
+  トルク [N m]。順序は左前、左後、右前、右後
+- `/crawler/contacts` (`std_msgs/msg/Float64MultiArray`)。各行は map 座標系の
+  `[接触点 x, y, z [m], 接触力 x, y, z [N]]`
+- `/crawler/contact_markers` (`visualization_msgs/msg/MarkerArray`)。接触点と
+  接触力矢印を `base_link` 座標系で配信。矢印長は
+  `visualization.contact_force_scale` [m/N] で調整
 - `/odom` (`nav_msgs/msg/Odometry`)
 - `/imu/data`, `/crawler/imu` (`sensor_msgs/msg/Imu`)
 - `/clock` (`rosgraph_msgs/msg/Clock`)
@@ -73,6 +80,21 @@ ros2 topic pub --once /crawler/flipper_commands std_msgs/msg/Float64MultiArray \
 
 TF は `map -> base_link` をシミュレータが、`base_link` 以下を
 `robot_state_publisher` が配信します。IMU は理想センサで covariance は 0 です。
+
+## 30 cm 段差計測 launch
+
+`logix_step_30cm.launch.py` は初期車体基準位置の前方 1 m に段差の前面を配置し、
+MuJoCo viewer の接触点・接触力表示を有効にします。また、4つのフリッパ関節
+トルクを同じウィンドウに表示する `rqt_plot` を同時に起動します。系列の順序は
+左前、左後、右前、右後です。`torque_plot:=false` で無効化できます。
+
+```bash
+ros2 launch crawler_mujoco logix_step_30cm.launch.py
+```
+
+計測値は `/crawler/contacts`（接触点・接触力）、
+`/crawler/joint_states` の `effort`（関節トルク）、`/odom`（車体位置姿勢）から
+取得できます。
 
 ## RGB-D
 

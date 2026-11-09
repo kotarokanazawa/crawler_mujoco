@@ -1,0 +1,12 @@
+# The crawler starts at x=0 and faces +x.  The 30 cm step mesh is 1.0 m
+# long after its model scale is applied, so x=1.5 puts its leading face at
+# x=1.0: one metre in front of the robot's initial reference position.
+robocup_arena:
+  objects:
+    30cmstep_1:
+      x: 1.5
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
