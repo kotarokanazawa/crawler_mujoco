@@ -21,6 +21,92 @@
 `front_position` と `rear_position` は `base_link` 基準の取付位置です。
 `pointcloud_stride` を大きくすると点群帯域を削減できます。
 
+## sensors.mid360
+
+Mid-360を点群LiDARと内蔵6軸IMUからなる複合センサとして設定します。
+`frames`へ1台追加するだけで、同じ位置・姿勢・`frame_id`を持つMuJoCo raycast
+siteとIMU siteが生成されます。
+
+```yaml
+sensors:
+  mid360:
+    enabled: true
+    lidar:
+      publish_rate: 10.0
+      points_per_scan: 2000
+      pattern_file: package://crawler_mujoco/assets/lidar_patterns/livox_mid360_pattern/livox_mid360_measured.yaml
+    imu:
+      noise:
+        enabled: true
+    frames:
+      - name: front
+        frame_id: front_lidar_link
+        pointcloud_topic: /livox/front/lidar
+        imu_topic: /livox/front/imu
+        position: [0.275, 0.0, 0.065]
+        rpy_deg: [0.0, 20.0, 0.0]
+```
+
+各frameでは次を個別指定できます。
+
+- `name`: MuJoCo内部site/sensor名の接頭辞
+- `frame_id`: PointCloud2とImuの共通ROS frame
+- `pointcloud_topic`, `imu_topic`: それぞれの配信先
+- `position`, `rpy_deg`: `base_link`基準の共通取付姿勢
+- `lidar_site_name`, `imu_site_name`, `imu_sensor_name`: 必要な場合のみ内部名を上書き
+- `imu_aliases`: 同じIMUを配信する追加topic
+- `lidar`, `imu`: その1台だけに適用する設定上書き
+
+従来の`sensors.lidar`と`sensors.imu`も使用でき、Mid-360 frameと併設できます。
+
+## sensors.imu
+
+`frames`ごとにMuJoCoの6軸IMU（3軸角速度＋3軸並進加速度）を生成します。
+各エントリでは`site_name`、`sensor_name`、ROSの`frame_id`と`topic`、
+`base_link`基準の`position`、`rpy_deg`を設定します。`aliases`を指定すると同じ
+メッセージを互換topicにも配信します。
+
+6軸センサのため絶対姿勢は計測値として配信せず、`sensor_msgs/Imu`の
+`orientation_covariance[0]`を`-1`に設定します。角速度と加速度は各`frame_id`
+のローカル軸で表現されます。既定設定では車体IMUに加えて、前後Livoxの
+`front_lidar_link`、`rear_lidar_link`基準でも配信します。
+
+`noise`ではICM-40609相当の確率モデルを設定します。
+
+- `seed`: 再現可能な乱数seed。各frameは`seed + frame index`を使用
+- `sample_rate_hz`: 白色ノイズ密度を1サンプル標準偏差へ変換する周波数
+- `gyro_noise_density_dps_sqrt_hz`, `accel_noise_density_g_sqrt_hz`: 白色ノイズ密度
+- `*_initial_bias_std_*`: 起動時に個体ごとに固定されるバイアスの標準偏差
+- `*_bias_random_walk_*`: 時間とともに変動するバイアスランダムウォーク
+- `*_scale_error`: 軸ごとの感度誤差上限
+- `gyro_full_scale_dps`, `accel_full_scale_g`: 飽和範囲
+- `quantization_enabled`, `adc_levels`: ADC量子化
+
+既定の白色ノイズ密度、感度誤差、フルスケールはICM-40609の公開仕様を基準にし、
+初期バイアスとランダムウォークはシミュレーション調整値です。`noise.enabled: false`
+にするとMuJoCo真値をそのまま配信します。frameごとの`noise`マッピングで共通設定を
+上書きできます。
+
+## sensors.lidar
+
+`enabled: true` にすると、MuJoCo の collision geom に対する raycast で Livox
+Mid-360 風の非反復走査を生成し、ROS 2 の `/livox/lidar` へ
+`sensor_msgs/PointCloud2` を配信します。`frames` に複数の取付設定を記述できます。
+
+- `publish_rate`: 点群配信周波数 [Hz]
+- `points_per_scan`: 1 メッセージあたりの ray 数（大きいほど計算負荷が増加）
+- `min_range`, `max_range`: 有効距離 [m]
+- `vertical_min_deg`, `vertical_max_deg`: 垂直視野角 [deg]
+- `frames[].site_name`: MuJoCo内部で使用する一意なsite名
+- `frames[].frame_id`: 点群ヘッダとTFで使用するROS frame名
+- `frames[].topic`: 点群の配信topic
+- `frames[].position`: `base_link` 基準の取付位置 [m]
+- `frames[].rpy_deg`: `base_link` 基準の roll、pitch、yaw [deg]
+
+実機固有の発射タイミング表ではなく、Mid-360 の 360° × 59° 視野を再現する
+決定論的な近似パターンです。厳密な時刻補償が必要な用途では、各点の時刻を持つ
+Livox CustomMsg 相当への拡張が必要です。
+
 ## grouser
 
 - `shape`: `none`、`rectangle`、`semicircle`、`spike`

@@ -1,12 +1,13 @@
 # Bundled arena assets
 
-`arenas/` と `models/` は、`crawler_mujoco` を単体で配布・実行できるように
+`arenas/`、`models/`、`lidar_patterns/` は、`crawler_mujoco` を単体で配布・実行できるように
 必要な資産だけをまとめたものです。
 
 - arena YAML: `crawler_mujoco` で利用する地形設定
 - model SDF/STL/OBJ: 上記 YAML が参照する既存13モデル、4種類の1.2 m
   オーバーハング障害物、および凹形状の凸分解結果
 - 元資産の package metadata は BSD ライセンスを宣言
+- `lidar_patterns/livox_mid360_pattern`: 実測LVX2から生成済みの方向列YAML/CSV。
 
 画像、DAE、Gazebo plugin、未参照モデル、`model.config` は実行に不要なため含めていません。
 `collision_parts/` の OBJ は CoACD 1.0.11 で生成済みのため、実行時に CoACD や

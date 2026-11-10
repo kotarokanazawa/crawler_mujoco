@@ -25,6 +25,18 @@ SHAPES = ("none", "rectangle", "semicircle", "spike")
 def f3(values) -> str:
     return " ".join(f"{float(value):.9g}" for value in values)
 
+
+def ros_rpy_deg_to_mujoco_quat(rpy_deg) -> tuple[float, float, float, float]:
+    """Convert ROS fixed-axis roll/pitch/yaw degrees to MuJoCo wxyz."""
+    roll, pitch, yaw = (math.radians(float(value)) for value in rpy_deg)
+    cr, sr = math.cos(roll / 2), math.sin(roll / 2)
+    cp, sp = math.cos(pitch / 2), math.sin(pitch / 2)
+    cy, sy = math.cos(yaw / 2), math.sin(yaw / 2)
+    return (cr * cp * cy + sr * sp * sy,
+            sr * cp * cy - cr * sp * sy,
+            cr * sp * cy + sr * cp * sy,
+            cr * cp * sy - sr * sp * cy)
+
 def spike_mesh(name: str, width: float, length: float, height: float) -> str:
     """Return an exact triangular prism with its base on local z=0."""
     x = width / 2
@@ -336,9 +348,33 @@ def build_xml(cfg: dict, shape: str) -> str:
     y_positions = (-float(robot["track_separation"]) / 2, float(robot["track_separation"]) / 2)
     track_radius = float(robot["track_radius"])
     spawn_z = float(robot["spawn_z"])
+    imu_cfg = cfg.get("sensors", {}).get("imu", {})
     imu_position = tuple(float(value) for value in robot.get(
         "imu_position", (0.0, 0.0, sz)))
+    imu_mounts = imu_cfg.get("frames") or [{
+        "site_name": "imu", "sensor_name": "body",
+        "position": imu_position, "rpy_deg": (0.0, 0.0, 0.0),
+    }]
+    imu_sites, imu_sensors = [], []
+    if bool(imu_cfg.get("enabled", True)):
+        for index, mount in enumerate(imu_mounts):
+            site_name = str(mount.get("site_name", f"imu_{index}"))
+            sensor_name = str(mount.get("sensor_name", site_name))
+            position = tuple(float(value) for value in mount.get(
+                "position", imu_position))
+            quat = ros_rpy_deg_to_mujoco_quat(
+                mount.get("rpy_deg", (0.0, 0.0, 0.0)))
+            imu_sites.append(
+                f'<site name="{escape(site_name)}" pos="{f3(position)}" '
+                f'quat="{f3(quat)}" size="0.01" rgba="0.3 1 0.3 1"/>')
+            imu_sensors.extend((
+                f'<gyro name="{escape(sensor_name)}_gyro" site="{escape(site_name)}"/>',
+                f'<accelerometer name="{escape(sensor_name)}_acceleration" '
+                f'site="{escape(site_name)}"/>',
+            ))
+    imu_sites_xml = "\n".join(imu_sites)
     rgbd = cfg.get("sensors", {}).get("rgbd", {})
+    lidar = cfg.get("sensors", {}).get("lidar", {})
     camera_enabled = bool(rgbd.get("enabled", True))
     camera_pitch = math.radians(float(rgbd.get("downward_pitch_deg", 20.0)))
     camera_sin, camera_cos = math.sin(camera_pitch), math.cos(camera_pitch)
@@ -354,6 +390,25 @@ def build_xml(cfg: dict, shape: str) -> str:
               xyaxes="0 -1 0 {camera_sin:.9g} 0 {camera_cos:.9g}" fovy="{camera_fovy:.9g}"/>
       <camera name="rear_rgbd" pos="{f3(rear_camera_position)}"
               xyaxes="0 1 0 {-camera_sin:.9g} 0 {camera_cos:.9g}" fovy="{camera_fovy:.9g}"/>'''
+    lidar_xml = ""
+    if bool(lidar.get("enabled", False)):
+        mounts = lidar.get("frames") or [{
+            "site_name": "lidar",
+            "position": lidar.get("position", (0.0, 0.0, sz)),
+            "rpy_deg": lidar.get("rpy_deg", (0.0, 0.0, 0.0)),
+        }]
+        sites = []
+        for index, mount in enumerate(mounts):
+            site_name = str(mount.get("site_name", f"lidar_{index}"))
+            position = tuple(float(value) for value in mount.get(
+                "position", (0.0, 0.0, sz)))
+            rpy = tuple(float(value) for value in mount.get(
+                "rpy_deg", (0.0, 0.0, 0.0)))
+            quat = ros_rpy_deg_to_mujoco_quat(rpy)
+            sites.append(f'<site name="{escape(site_name)}" pos="{f3(position)}" '
+                         f'quat="{f3(quat)}" size="0.015" '
+                         f'rgba="0.1 0.8 1 1"/>')
+        lidar_xml = "\n".join(sites)
     max_omega = max_drive_omega(cfg)
     wheel_kv, straight_kv = velocity_servo_gains(cfg)
     max_yaw_torque = straight_force_limit(cfg) * float(robot["drive_track_width"])
@@ -416,7 +471,8 @@ def build_xml(cfg: dict, shape: str) -> str:
       <inertial pos="0 0 {sz/2:.9g}" mass="{float(robot['chassis_mass']):.9g}" diaginertia="0.22 0.42 0.45"/>
       <geom name="chassis" type="box" pos="0 0 {sz/2:.9g}" size="{sx/2:.9g} {sy/2:.9g} {sz/2:.9g}"
             rgba="0.78 0.42 0.08 1" contype="2" conaffinity="1"/>
-      <site name="imu" pos="{f3(imu_position)}" size="0.01"/>
+      {imu_sites_xml}
+      {lidar_xml}
       {camera_xml}
       {''.join(wheels)}
       {''.join(straight_sections)}
@@ -427,11 +483,10 @@ def build_xml(cfg: dict, shape: str) -> str:
               kv="{yaw_kv:.9g}" ctrlrange="{-float(robot['max_commanded_angular_speed']):.9g} {float(robot['max_commanded_angular_speed']):.9g}"
               forcerange="{-max_yaw_torque:.9g} {max_yaw_torque:.9g}"/>
   </actuator>'''
-        sensor_xml = '''<sensor>
+        sensor_xml = f'''<sensor>
     <framepos name="body_position" objtype="body" objname="crawler"/>
     <framequat name="body_orientation" objtype="body" objname="crawler"/>
-    <gyro name="body_gyro" site="imu"/>
-    <accelerometer name="body_acceleration" site="imu"/>
+    {''.join(imu_sensors)}
   </sensor>'''
     return f'''<mujoco model="crawler_{escape(shape)}">
   <compiler angle="degree" autolimits="true"/>

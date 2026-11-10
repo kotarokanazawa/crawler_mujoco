@@ -9,6 +9,9 @@
 フリッパ付きクローラを MuJoCo で走行させる、単体実行可能なシミュレータです。
 主履帯とフリッパ履帯のグローサ形状を切り替え、接触力・姿勢・到達時間を CSV に記録できます。
 ROS 2 ブリッジ、RGB-D、真値地形点群の配信にも対応します。
+MuJoCo raycast による Livox Mid-360 風の 3D LiDAR 点群も配信できます。
+車体および前後Livox frameの6軸IMUには、白色ノイズ、バイアスドリフト、
+感度誤差、飽和、ADC量子化を設定できます。
 
 `crawler_mujoco` は arena YAML と必要な STL/SDF を `assets/` に同梱しているため、
 別のシミュレーションリポジトリは不要です。
@@ -95,6 +98,10 @@ ros2 launch crawler_mujoco environment_editor.launch.py
 保存先は`assets/arenas/custom/`です。保存後に画面へ表示された絶対パスを
 `arena_yaml`へ渡して実行できます。
 詳しい操作方法は[docs/ENVIRONMENT_EDITOR.md](docs/ENVIRONMENT_EDITOR.md)を参照してください。
+
+実測LVX2の走査パターン生成とRViz確認は、任意の独立した`lidar_pattern_tools`
+パッケージで行えます。MuJoCo側には生成済みMid-360 YAML/CSVを同梱しているため、
+実行時・ビルド時ともに`lidar_pattern_tools`へ依存しません。
 
 ```bash
 ros2 launch crawler_mujoco crawler_mujoco.launch.py \

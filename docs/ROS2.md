@@ -70,6 +70,10 @@ ros2 run crawler_mujoco crawler_mujoco --shape rectangle --ros2
 - `/clock` (`rosgraph_msgs/msg/Clock`)
 - `/octomap_pointcloud`（選択したvoxel点群）、`/octomap_pointcloud/raw`（処理前点群、arena指定時）
 - `/camera/front/*`, `/camera/rear/*`, `/camera/points` (`sensors.rgbd.enabled: true` 時)
+- `/livox/front/lidar`, `/livox/rear/lidar` (`sensor_msgs/PointCloud2`,
+  `sensors.lidar.enabled: true` 時。topic と frame は `sensors.lidar.frames` で変更可能)
+- `/imu/data`, `/crawler/imu` (`imu_link`基準の6軸IMU)
+- `/livox/front/imu`, `/livox/rear/imu`（各Livox frame基準の6軸IMU）
 
 フリッパ配列の順序は左前、左後、右前、右後で、値は rad です。
 

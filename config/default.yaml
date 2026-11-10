@@ -9,6 +9,57 @@ simulation:
 robot_config: robot.yaml
 
 sensors:
+  # Optional standalone body IMU. Mid-360 IMUs are generated below.
+  imu:
+    enabled: true
+    frames:
+      - site_name: imu
+        sensor_name: body
+        frame_id: imu_link
+        topic: /imu/data
+        aliases: [/crawler/imu]
+        position: [0.0, 0.0, 0.04]
+        rpy_deg: [0.0, 0.0, 0.0]
+  mid360:
+    enabled: true
+    lidar:
+      publish_rate: 10.0
+      points_per_scan: 2000
+      pattern_file: package://crawler_mujoco/assets/lidar_patterns/livox_mid360_pattern/livox_mid360_measured.yaml
+      min_range: 0.1
+      max_range: 40.0
+      vertical_min_deg: -7.0
+      vertical_max_deg: 52.0
+    imu:
+      noise:
+        enabled: true
+        seed: 42
+        sample_rate_hz: 30.0
+        gyro_noise_density_dps_sqrt_hz: 0.0045
+        accel_noise_density_g_sqrt_hz: 0.0001
+        gyro_initial_bias_std_dps: 0.05
+        accel_initial_bias_std_mps2: 0.01
+        gyro_bias_random_walk_dps_sqrt_s: 0.002
+        accel_bias_random_walk_mps2_sqrt_s: 0.001
+        gyro_scale_error: 0.005
+        accel_scale_error: 0.005
+        gyro_full_scale_dps: 2000.0
+        accel_full_scale_g: 4.0
+        quantization_enabled: true
+        adc_levels: 65536
+    frames:
+      - name: front
+        frame_id: front_lidar_link
+        pointcloud_topic: /livox/front/lidar
+        imu_topic: /livox/front/imu
+        position: [0.275, 0.0, 0.065]
+        rpy_deg: [0.0, 20.0, 0.0]
+      - name: rear
+        frame_id: rear_lidar_link
+        pointcloud_topic: /livox/rear/lidar
+        imu_topic: /livox/rear/imu
+        position: [-0.275, 0.0, 0.065]
+        rpy_deg: [0.0, 20.0, 180.0]
   rgbd:
     enabled: false
     width: 160

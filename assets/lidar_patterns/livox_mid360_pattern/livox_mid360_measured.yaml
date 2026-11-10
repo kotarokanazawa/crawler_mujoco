@@ -1,0 +1,36 @@
+format: crawler_mujoco_lidar_pattern/v1
+name: livox_mid360_measured
+coordinate_system: x_forward_y_left_z_up
+pattern_csv: livox_mid360_measured.csv
+point_rate_hz: 200000
+scan_rate_hz: 10.0
+points_per_scan: 20000
+repeat: true
+source:
+  type: lvx2
+  file: Indoor_sampledata.lvx2
+  version: 2.0.0.0
+  frame_duration_ms: 50
+  devices:
+  - serial: 47MDK9DF710030
+    lidar_id: 738306240
+    device_type: 9
+    extrinsic_enabled: true
+  source_start_s: 0.5
+  source_duration_s: 1.0
+statistics:
+  slot_count: 200000
+  measured_count: 129954
+  interpolated_count: 70046
+  measured_ratio: 0.64977
+  maximum_missing_run: 384
+  azimuth_min_deg: 0.0067677507718300845
+  azimuth_max_deg: 359.99999999999227
+  elevation_min_deg: -7.08572507443497
+  elevation_max_deg: 53.91189778947573
+  median_azimuth_step_per_four_points_deg: 1.3146982808924133
+  median_elevation_steps_by_index_mod4_deg:
+  - -0.017526888713356115
+  - -0.02160206635146967
+  - -0.02435391043555605
+  - 0.03469161417468619

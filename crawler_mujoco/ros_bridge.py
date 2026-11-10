@@ -50,8 +50,41 @@ class CrawlerMujocoRosNode(Node):
         self.contact_force_scale = float(
             cfg.get("visualization", {}).get("contact_force_scale", 0.001))
         self.odom_pub = self.create_publisher(Odometry, "/odom", 10)
-        self.imu_pub = self.create_publisher(Imu, "/imu/data", 10)
-        self.crawler_imu_pub = self.create_publisher(Imu, "/crawler/imu", 10)
+        imu_cfg = cfg.get("sensors", {}).get("imu", {})
+        common_imu_noise = imu_cfg.get("noise", {})
+        imu_mounts = imu_cfg.get("frames") or [{
+            "site_name": "imu", "sensor_name": "body",
+            "frame_id": "imu_link", "topic": "/imu/data",
+            "aliases": ["/crawler/imu"],
+        }]
+        self.imus = []
+        if bool(imu_cfg.get("enabled", True)):
+            for index, mount in enumerate(imu_mounts):
+                topic = str(mount.get("topic", f"/imu/{index}"))
+                topics = [topic, *(str(value) for value in mount.get("aliases", []))]
+                noise = {**common_imu_noise, **mount.get("noise", {})}
+                rng = np.random.default_rng(
+                    int(noise.get("seed", 42)) + index)
+                gyro_bias_std = math.radians(float(
+                    noise.get("gyro_initial_bias_std_dps", 0.05)))
+                accel_bias_std = float(
+                    noise.get("accel_initial_bias_std_mps2", 0.01))
+                self.imus.append({
+                    "site_name": str(mount.get("site_name", f"imu_{index}")),
+                    "sensor_name": str(mount.get("sensor_name", f"imu_{index}")),
+                    "frame_id": str(mount.get("frame_id", f"imu_{index}_link")),
+                    "publishers": [self.create_publisher(Imu, value, 10)
+                                   for value in topics],
+                    "noise": noise,
+                    "rng": rng,
+                    "gyro_bias": rng.normal(0.0, gyro_bias_std, 3),
+                    "accel_bias": rng.normal(0.0, accel_bias_std, 3),
+                    "gyro_scale": rng.uniform(-1.0, 1.0, 3) * float(
+                        noise.get("gyro_scale_error", 0.005)),
+                    "accel_scale": rng.uniform(-1.0, 1.0, 3) * float(
+                        noise.get("accel_scale_error", 0.005)),
+                    "last_time": None,
+                })
         self.clock_pub = self.create_publisher(Clock, "/clock", 10)
         self.rgbd_cfg = cfg.get("sensors", {}).get("rgbd", {})
         self.camera_publishers = {}
@@ -70,10 +103,77 @@ class CrawlerMujocoRosNode(Node):
             }
         self.combined_points_pub = self.create_publisher(
             PointCloud2, "/camera/points", 2)
+        self.lidar_cfg = cfg.get("sensors", {}).get("lidar", {})
+        mounts = self.lidar_cfg.get("frames") or [{
+            "site_name": "lidar", "frame_id": "lidar_link",
+            "topic": "/livox/lidar",
+        }]
+        self.lidars = []
+        for index, mount in enumerate(mounts):
+            topic = str(mount.get("topic", f"/livox/lidar_{index}"))
+            self.lidars.append({
+                "site_name": str(mount.get("site_name", f"lidar_{index}")),
+                "frame_id": str(mount.get("frame_id", f"lidar_{index}_link")),
+                "publisher": self.create_publisher(PointCloud2, topic, 2),
+                "sensor": None,
+                "next_time": 0.0,
+                "config": {**self.lidar_cfg, **mount},
+            })
         self.renderer = None
         self.next_camera_time = 0.0
         self.camera_error_reported = False
         self.tf_broadcaster = TransformBroadcaster(self)
+
+    @staticmethod
+    def _noisy_imu(configured_imu: dict, gyro, acceleration,
+                   simulation_time: float) -> tuple[np.ndarray, np.ndarray, float, float]:
+        """Apply a configurable ICM-40609-like stochastic sensor model."""
+        noise = configured_imu["noise"]
+        gyro = np.asarray(gyro, dtype=np.float64).copy()
+        acceleration = np.asarray(acceleration, dtype=np.float64).copy()
+        if not bool(noise.get("enabled", True)):
+            return gyro, acceleration, 0.0, 0.0
+        previous = configured_imu["last_time"]
+        default_rate = max(float(noise.get("sample_rate_hz", 30.0)), 1e-6)
+        dt = (1.0 / default_rate if previous is None
+              else max(simulation_time - previous, 1e-6))
+        configured_imu["last_time"] = simulation_time
+        rng = configured_imu["rng"]
+
+        gyro_walk = math.radians(float(
+            noise.get("gyro_bias_random_walk_dps_sqrt_s", 0.002)))
+        accel_walk = float(
+            noise.get("accel_bias_random_walk_mps2_sqrt_s", 0.001))
+        configured_imu["gyro_bias"] += rng.normal(
+            0.0, gyro_walk * math.sqrt(dt), 3)
+        configured_imu["accel_bias"] += rng.normal(
+            0.0, accel_walk * math.sqrt(dt), 3)
+
+        # Convert noise density to per-sample sigma using Nyquist bandwidth.
+        bandwidth = 0.5 / dt
+        gyro_sigma = math.radians(float(
+            noise.get("gyro_noise_density_dps_sqrt_hz", 0.0045))) * math.sqrt(bandwidth)
+        accel_sigma = (float(noise.get(
+            "accel_noise_density_g_sqrt_hz", 0.0001)) * 9.80665
+                       * math.sqrt(bandwidth))
+        gyro = (gyro * (1.0 + configured_imu["gyro_scale"])
+                + configured_imu["gyro_bias"]
+                + rng.normal(0.0, gyro_sigma, 3))
+        acceleration = (acceleration * (1.0 + configured_imu["accel_scale"])
+                        + configured_imu["accel_bias"]
+                        + rng.normal(0.0, accel_sigma, 3))
+
+        gyro_limit = math.radians(float(noise.get("gyro_full_scale_dps", 2000.0)))
+        accel_limit = float(noise.get("accel_full_scale_g", 4.0)) * 9.80665
+        gyro = np.clip(gyro, -gyro_limit, gyro_limit)
+        acceleration = np.clip(acceleration, -accel_limit, accel_limit)
+        if bool(noise.get("quantization_enabled", True)):
+            levels = max(2, int(noise.get("adc_levels", 65536)))
+            gyro_step = 2.0 * gyro_limit / levels
+            accel_step = 2.0 * accel_limit / levels
+            gyro = np.round(gyro / gyro_step) * gyro_step
+            acceleration = np.round(acceleration / accel_step) * accel_step
+        return gyro, acceleration, gyro_sigma, accel_sigma
 
     def _camera_info(self, stamp, frame_id: str) -> CameraInfo:
         width = int(self.rgbd_cfg.get("width", 320))
@@ -218,6 +318,35 @@ class CrawlerMujocoRosNode(Node):
                 self.get_logger().error(f"RGB-D rendering disabled: {error}")
                 self.camera_error_reported = True
 
+    def publish_lidar(self, model, data, stamp) -> None:
+        """Ray-cast and publish an XYZ cloud in the moving lidar frame."""
+        if not bool(self.lidar_cfg.get("enabled", False)):
+            return
+        from .lidar import LivoxMid360Lidar
+        for lidar in self.lidars:
+            rate = max(float(lidar["config"].get("publish_rate", 10.0)), 1e-6)
+            if data.time + 1e-12 < lidar["next_time"]:
+                continue
+            lidar["next_time"] = data.time + 1.0 / rate
+            if lidar["sensor"] is None:
+                lidar["sensor"] = LivoxMid360Lidar(
+                    model, lidar["config"], lidar["site_name"])
+            xyz = lidar["sensor"].scan(data)
+            message = PointCloud2()
+            message.header.stamp = stamp
+            message.header.frame_id = lidar["frame_id"]
+            message.height, message.width = 1, len(xyz)
+            message.fields = [
+                PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
+                PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
+                PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
+            ]
+            message.is_bigendian, message.point_step = False, 12
+            message.row_step = message.point_step * message.width
+            message.is_dense = True
+            message.data = np.ascontiguousarray(xyz, dtype=np.float32).tobytes()
+            lidar["publisher"].publish(message)
+
     def _cmd_vel(self, message: Twist) -> None:
         with self.lock:
             self.linear = float(message.linear.x)
@@ -316,28 +445,37 @@ class CrawlerMujocoRosNode(Node):
         odom.twist.twist.angular.z = float(data.qvel[5])
         self.odom_pub.publish(odom)
 
-        imu = Imu()
-        imu.header.stamp = stamp
-        imu.header.frame_id = "imu_link"
-        imu.orientation.w = float(quaternion[0])
-        imu.orientation.x = float(quaternion[1])
-        imu.orientation.y = float(quaternion[2])
-        imu.orientation.z = float(quaternion[3])
-        gyro = data.sensor("body_gyro").data
-        acceleration = data.sensor("body_acceleration").data
-        imu.angular_velocity.x = float(gyro[0])
-        imu.angular_velocity.y = float(gyro[1])
-        imu.angular_velocity.z = float(gyro[2])
-        imu.linear_acceleration.x = float(acceleration[0])
-        imu.linear_acceleration.y = float(acceleration[1])
-        imu.linear_acceleration.z = float(acceleration[2])
-        # Zero covariance denotes ideal simulated ground truth measurements.
-        imu.orientation_covariance = [0.0] * 9
-        imu.angular_velocity_covariance = [0.0] * 9
-        imu.linear_acceleration_covariance = [0.0] * 9
-        self.imu_pub.publish(imu)
-        self.crawler_imu_pub.publish(imu)
+        for configured_imu in self.imus:
+            sensor_name = configured_imu["sensor_name"]
+            gyro = data.sensor(f"{sensor_name}_gyro").data
+            acceleration = data.sensor(f"{sensor_name}_acceleration").data
+            gyro, acceleration, gyro_sigma, accel_sigma = self._noisy_imu(
+                configured_imu, gyro, acceleration, float(data.time))
+            imu_message = Imu()
+            imu_message.header.stamp = stamp
+            imu_message.header.frame_id = configured_imu["frame_id"]
+            # Six-axis IMUs do not directly measure absolute orientation.
+            imu_message.orientation_covariance[0] = -1.0
+            imu_message.angular_velocity.x = float(gyro[0])
+            imu_message.angular_velocity.y = float(gyro[1])
+            imu_message.angular_velocity.z = float(gyro[2])
+            imu_message.linear_acceleration.x = float(acceleration[0])
+            imu_message.linear_acceleration.y = float(acceleration[1])
+            imu_message.linear_acceleration.z = float(acceleration[2])
+            imu_message.angular_velocity_covariance = [
+                gyro_sigma ** 2, 0.0, 0.0,
+                0.0, gyro_sigma ** 2, 0.0,
+                0.0, 0.0, gyro_sigma ** 2,
+            ]
+            imu_message.linear_acceleration_covariance = [
+                accel_sigma ** 2, 0.0, 0.0,
+                0.0, accel_sigma ** 2, 0.0,
+                0.0, 0.0, accel_sigma ** 2,
+            ]
+            for publisher in configured_imu["publishers"]:
+                publisher.publish(imu_message)
         self.publish_cameras(model, data, stamp)
+        self.publish_lidar(model, data, stamp)
 
         transform = TransformStamped()
         transform.header.stamp = stamp

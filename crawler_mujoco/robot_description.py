@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
 
 from .configuration import load_config
 
@@ -11,11 +12,12 @@ def robot_description(config_path: str | Path) -> str:
     config = load_config(config_path)
     r = config["robot"]
     rgbd = config.get("sensors", {}).get("rgbd", {})
+    lidar = config.get("sensors", {}).get("lidar", {})
+    imu = config.get("sensors", {}).get("imu", {})
     sx, sy, sz = map(float, r["chassis_size"])
     length, width = float(r["flipper_length"]), float(r["flipper_width"])
     track_radius = float(r["track_radius"])
     track_height = 2 * track_radius
-    imu_position = tuple(float(value) for value in r.get("imu_position", (0.0, 0.0, sz)))
     camera_pitch = float(rgbd.get("downward_pitch_deg", 20.0)) * 3.141592653589793 / 180.0
     front_camera_position = tuple(float(value) for value in rgbd.get(
         "front_position", (sx / 2, 0.0, sz * 0.8)))
@@ -28,14 +30,50 @@ def robot_description(config_path: str | Path) -> str:
   <material name="sprocket"><color rgba="0.22 0.22 0.22 1"/></material>
   <material name="flipper"><color rgba="0.1 0.35 0.75 1"/></material>
   <link name="base_link"><visual><geometry><box size="{sx} {sy} {sz}"/></geometry><material name="body"/></visual></link>
-  <link name="imu_link"/>
-  <joint name="base_to_imu" type="fixed"><parent link="base_link"/><child link="imu_link"/><origin xyz="{imu_position[0]} {imu_position[1]} {imu_position[2]}"/></joint>
   <link name="front_rgbd_link"/><link name="front_rgbd_optical_frame"/>
   <joint name="base_to_front_rgbd" type="fixed"><parent link="base_link"/><child link="front_rgbd_link"/><origin xyz="{front_camera_position[0]} {front_camera_position[1]} {front_camera_position[2]}" rpy="0 {camera_pitch} 0"/></joint>
   <joint name="front_rgbd_to_optical" type="fixed"><parent link="front_rgbd_link"/><child link="front_rgbd_optical_frame"/><origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/></joint>
   <link name="rear_rgbd_link"/><link name="rear_rgbd_optical_frame"/>
   <joint name="base_to_rear_rgbd" type="fixed"><parent link="base_link"/><child link="rear_rgbd_link"/><origin xyz="{rear_camera_position[0]} {rear_camera_position[1]} {rear_camera_position[2]}" rpy="0 {-camera_pitch} 3.14159265359"/></joint>
   <joint name="rear_rgbd_to_optical" type="fixed"><parent link="rear_rgbd_link"/><child link="rear_rgbd_optical_frame"/><origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/></joint>''']
+    defined_frames = {
+        "base_link", "front_rgbd_link", "front_rgbd_optical_frame",
+        "rear_rgbd_link", "rear_rgbd_optical_frame",
+    }
+    if bool(lidar.get("enabled", False)):
+        mounts = lidar.get("frames") or [{
+            "frame_id": "lidar_link",
+            "position": lidar.get("position", (0.0, 0.0, sz)),
+            "rpy_deg": lidar.get("rpy_deg", (0.0, 0.0, 0.0)),
+        }]
+        for index, mount in enumerate(mounts):
+            frame_id = str(mount.get("frame_id", f"lidar_{index}_link"))
+            position = tuple(float(value) for value in mount.get(
+                "position", (0.0, 0.0, sz)))
+            rpy = tuple(math.radians(float(value)) for value in mount.get(
+                "rpy_deg", (0.0, 0.0, 0.0)))
+            parts.append(f'''
+  <link name="{frame_id}"/>
+  <joint name="base_to_{frame_id}" type="fixed"><parent link="base_link"/><child link="{frame_id}"/><origin xyz="{position[0]} {position[1]} {position[2]}" rpy="{rpy[0]} {rpy[1]} {rpy[2]}"/></joint>''')
+            defined_frames.add(frame_id)
+    if bool(imu.get("enabled", True)):
+        default_position = r.get("imu_position", (0.0, 0.0, sz))
+        mounts = imu.get("frames") or [{
+            "frame_id": "imu_link", "position": default_position,
+            "rpy_deg": (0.0, 0.0, 0.0),
+        }]
+        for index, mount in enumerate(mounts):
+            frame_id = str(mount.get("frame_id", f"imu_{index}_link"))
+            if frame_id in defined_frames:
+                continue
+            position = tuple(float(value) for value in mount.get(
+                "position", default_position))
+            rpy = tuple(math.radians(float(value)) for value in mount.get(
+                "rpy_deg", (0.0, 0.0, 0.0)))
+            parts.append(f'''
+  <link name="{frame_id}"/>
+  <joint name="base_to_{frame_id}" type="fixed"><parent link="base_link"/><child link="{frame_id}"/><origin xyz="{position[0]} {position[1]} {position[2]}" rpy="{rpy[0]} {rpy[1]} {rpy[2]}"/></joint>''')
+            defined_frames.add(frame_id)
     for side, sign in (("left", 1), ("right", -1)):
         parts.append(f'''
   <link name="main_track_{side}">
