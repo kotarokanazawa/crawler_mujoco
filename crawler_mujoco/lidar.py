@@ -94,20 +94,28 @@ class LivoxMid360Lidar:
                                 horizontal * np.sin(azimuth),
                                 np.sin(elevation)))
 
-    def scan(self, data: mujoco.MjData) -> np.ndarray:
-        """Return valid XYZ hits in lidar_link coordinates."""
+    def scan_with_ray_indices(
+            self, data: mujoco.MjData) -> tuple[np.ndarray, np.ndarray, int]:
+        """Return valid XYZ hits, their firing indices, and total ray count."""
         count = max(1, int(self.cfg.get("points_per_scan", 2000)))
         minimum = max(0.0, float(self.cfg.get("min_range", 0.1)))
         maximum = float(self.cfg.get("max_range", 40.0))
         local_rays = self.directions(count)
         rotation = np.asarray(data.site_xmat[self.site_id]).reshape(3, 3)
         origin = np.asarray(data.site_xpos[self.site_id], dtype=np.float64)
-        points = []
-        geom_id = np.empty(1, dtype=np.int32)
-        for local_ray in local_rays:
-            distance = mujoco.mj_ray(self.model, data, origin,
-                                     rotation @ local_ray, None, True,
-                                     self.body_id, geom_id)
-            if minimum <= distance <= maximum:
-                points.append(local_ray * distance)
-        return np.asarray(points, dtype=np.float32).reshape(-1, 3)
+        world_rays = np.ascontiguousarray(
+            local_rays @ rotation.T, dtype=np.float64).ravel()
+        geom_ids = np.empty(count, dtype=np.int32)
+        distances = np.empty(count, dtype=np.float64)
+        mujoco.mj_multiRay(
+            self.model, data, origin, world_rays, None, True, self.body_id,
+            geom_ids, distances, None, count, maximum)
+        valid = (distances >= minimum) & (distances <= maximum)
+        ray_indices = np.flatnonzero(valid).astype(np.uint32)
+        points = (local_rays[valid] * distances[valid, np.newaxis]).astype(
+            np.float32, copy=False)
+        return points.reshape(-1, 3), ray_indices, count
+
+    def scan(self, data: mujoco.MjData) -> np.ndarray:
+        """Return valid XYZ hits in lidar_link coordinates."""
+        return self.scan_with_ray_indices(data)[0]

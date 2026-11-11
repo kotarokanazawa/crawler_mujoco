@@ -62,6 +62,10 @@ def launch_setup(context):
         command.append("--gui")
     if as_bool(LaunchConfiguration("show_contacts").perform(context)):
         command.append("--show-contacts")
+    if not as_bool(LaunchConfiguration("publish_ground_truth_tf").perform(context)):
+        command.append("--no-ground-truth-tf")
+    command.extend(("--lidar-output-format",
+                    LaunchConfiguration("lidar_output_format").perform(context)))
     spawn_robot = as_bool(LaunchConfiguration("spawn_robot").perform(context))
     if not spawn_robot:
         command.append("--no-robot")
@@ -152,6 +156,10 @@ def generate_launch_description():
         DeclareLaunchArgument("mujoco_gui", default_value="true"),
         DeclareLaunchArgument("show_contacts", default_value="false"),
         DeclareLaunchArgument("publish_truth_cloud", default_value="true"),
+        DeclareLaunchArgument("publish_ground_truth_tf", default_value="true"),
+        DeclareLaunchArgument(
+            "lidar_output_format", default_value="pointcloud2",
+            description="pointcloud2, custom, or both"),
         DeclareLaunchArgument("spawn_robot", default_value="true"),
         DeclareLaunchArgument("cloud_resolution", default_value="0.025"),
         DeclareLaunchArgument(

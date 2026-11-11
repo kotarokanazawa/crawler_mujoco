@@ -40,6 +40,8 @@ def expand_composite_sensors(config: dict) -> None:
             "frame_id": frame_id,
             "topic": str(frame.get(
                 "pointcloud_topic", f"/mid360/{name}/points")),
+            "custom_topic": str(frame.get(
+                "custom_topic", f"/mid360/{name}/custom")),
             "position": position,
             "rpy_deg": rpy,
         }

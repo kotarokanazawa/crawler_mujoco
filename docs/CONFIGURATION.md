@@ -32,6 +32,7 @@ sensors:
   mid360:
     enabled: true
     lidar:
+      output_format: pointcloud2
       publish_rate: 10.0
       points_per_scan: 2000
       pattern_file: package://crawler_mujoco/assets/lidar_patterns/livox_mid360_pattern/livox_mid360_measured.yaml
@@ -42,6 +43,7 @@ sensors:
       - name: front
         frame_id: front_lidar_link
         pointcloud_topic: /livox/front/lidar
+        custom_topic: /livox/front/custom
         imu_topic: /livox/front/imu
         position: [0.275, 0.0, 0.065]
         rpy_deg: [0.0, 20.0, 0.0]
@@ -51,7 +53,7 @@ sensors:
 
 - `name`: MuJoCo内部site/sensor名の接頭辞
 - `frame_id`: PointCloud2とImuの共通ROS frame
-- `pointcloud_topic`, `imu_topic`: それぞれの配信先
+- `pointcloud_topic`, `custom_topic`, `imu_topic`: それぞれの配信先
 - `position`, `rpy_deg`: `base_link`基準の共通取付姿勢
 - `lidar_site_name`, `imu_site_name`, `imu_sensor_name`: 必要な場合のみ内部名を上書き
 - `imu_aliases`: 同じIMUを配信する追加topic
@@ -74,7 +76,8 @@ sensors:
 `noise`ではICM-40609相当の確率モデルを設定します。
 
 - `seed`: 再現可能な乱数seed。各frameは`seed + frame index`を使用
-- `sample_rate_hz`: 白色ノイズ密度を1サンプル標準偏差へ変換する周波数
+- `sample_rate_hz`: IMUの独立配信周波数、および白色ノイズ密度を
+  1サンプル標準偏差へ変換する周波数。既定値は200 Hz
 - `gyro_noise_density_dps_sqrt_hz`, `accel_noise_density_g_sqrt_hz`: 白色ノイズ密度
 - `*_initial_bias_std_*`: 起動時に個体ごとに固定されるバイアスの標準偏差
 - `*_bias_random_walk_*`: 時間とともに変動するバイアスランダムウォーク
@@ -91,8 +94,10 @@ sensors:
 
 `enabled: true` にすると、MuJoCo の collision geom に対する raycast で Livox
 Mid-360 風の非反復走査を生成し、ROS 2 の `/livox/lidar` へ
-`sensor_msgs/PointCloud2` を配信します。`frames` に複数の取付設定を記述できます。
+`sensor_msgs/PointCloud2` または `livox_ros_driver2/CustomMsg` を配信します。
+`frames` に複数の取付設定を記述できます。
 
+- `output_format`: `pointcloud2`、`custom`、または両方を出す`both`
 - `publish_rate`: 点群配信周波数 [Hz]
 - `points_per_scan`: 1 メッセージあたりの ray 数（大きいほど計算負荷が増加）
 - `min_range`, `max_range`: 有効距離 [m]
@@ -100,12 +105,15 @@ Mid-360 風の非反復走査を生成し、ROS 2 の `/livox/lidar` へ
 - `frames[].site_name`: MuJoCo内部で使用する一意なsite名
 - `frames[].frame_id`: 点群ヘッダとTFで使用するROS frame名
 - `frames[].topic`: 点群の配信topic
+- `frames[].custom_topic`: Livox CustomMsgの配信topic
 - `frames[].position`: `base_link` 基準の取付位置 [m]
 - `frames[].rpy_deg`: `base_link` 基準の roll、pitch、yaw [deg]
 
 実機固有の発射タイミング表ではなく、Mid-360 の 360° × 59° 視野を再現する
-決定論的な近似パターンです。厳密な時刻補償が必要な用途では、各点の時刻を持つ
-Livox CustomMsg 相当への拡張が必要です。
+決定論的な近似パターンです。現在のraycastは全点を同一のMuJoCo姿勢で計算する
+瞬時スキャンなので、CustomMsgの全点を`offset_time=0`として配信します。
+各点には0～3の`line`、`tag=0`、設定可能な`reflectivity`（既定値100）も
+格納します。センサ移動によるスキャン歪み自体は再現しません。
 
 ## grouser
 

@@ -49,6 +49,8 @@ class ModelSmokeTest(unittest.TestCase):
             self.assertEqual(lidar_frame["frame_id"], imu_frame["frame_id"])
             self.assertEqual(lidar_frame["position"], imu_frame["position"])
             self.assertEqual(lidar_frame["rpy_deg"], imu_frame["rpy_deg"])
+            self.assertEqual(
+                lidar_frame["custom_topic"], f"/livox/{name}/custom")
 
     def test_all_bundled_arenas_compile(self) -> None:
         arena_root = ROOT / "assets" / "arenas"
@@ -96,6 +98,13 @@ class ModelSmokeTest(unittest.TestCase):
             [-np.sin(pitch), 0.0, np.cos(pitch)],
         ])
         self.assertTrue(np.allclose(rotation, expected, atol=1e-7))
+
+        timed = LivoxMid360Lidar(
+            model, config["sensors"]["lidar"], "front_lidar")
+        points, ray_indices, ray_count = timed.scan_with_ray_indices(data)
+        self.assertEqual(len(points), len(ray_indices))
+        self.assertEqual(ray_count, 128)
+        self.assertTrue(np.all(ray_indices[1:] > ray_indices[:-1]))
 
 
 if __name__ == "__main__":

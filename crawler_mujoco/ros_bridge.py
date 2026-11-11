@@ -27,12 +27,13 @@ FLIPPER_JOINTS = (
 
 
 class CrawlerMujocoRosNode(Node):
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: dict, publish_ground_truth_tf: bool = True):
         super().__init__("crawler_mujoco_bridge")
         self.lock = threading.Lock()
         self.linear = 0.0
         self.angular = 0.0
         self.flippers = [0.0] * 4
+        self.publish_ground_truth_tf = publish_ground_truth_tf
         self.create_subscription(Twist, "/cmd_vel", self._cmd_vel, 10)
         self.create_subscription(Twist, "/target/cmd_vel", self._cmd_vel, 10)
         self.create_subscription(Float64MultiArray, "/crawler/flipper_commands",
@@ -84,8 +85,13 @@ class CrawlerMujocoRosNode(Node):
                     "accel_scale": rng.uniform(-1.0, 1.0, 3) * float(
                         noise.get("accel_scale_error", 0.005)),
                     "last_time": None,
+                    "next_time": 0.0,
                 })
         self.clock_pub = self.create_publisher(Clock, "/clock", 10)
+        self.clock_publish_rate = max(
+            (float(imu["noise"].get("sample_rate_hz", 200.0))
+             for imu in self.imus), default=200.0)
+        self.next_clock_time = 0.0
         self.rgbd_cfg = cfg.get("sensors", {}).get("rgbd", {})
         self.camera_publishers = {}
         for side in ("front", "rear"):
@@ -104,6 +110,19 @@ class CrawlerMujocoRosNode(Node):
         self.combined_points_pub = self.create_publisher(
             PointCloud2, "/camera/points", 2)
         self.lidar_cfg = cfg.get("sensors", {}).get("lidar", {})
+        self.lidar_output_format = str(
+            self.lidar_cfg.get("output_format", "pointcloud2")).lower()
+        if self.lidar_output_format not in ("pointcloud2", "custom", "both"):
+            raise ValueError(
+                "sensors.lidar.output_format must be pointcloud2, custom, or both")
+        self.custom_msg_type = self.custom_point_type = None
+        if self.lidar_output_format in ("custom", "both"):
+            try:
+                from livox_ros_driver2.msg import CustomMsg, CustomPoint
+            except ImportError as error:
+                raise RuntimeError(
+                    "Livox CustomMsg output requires livox_ros_driver2") from error
+            self.custom_msg_type, self.custom_point_type = CustomMsg, CustomPoint
         mounts = self.lidar_cfg.get("frames") or [{
             "site_name": "lidar", "frame_id": "lidar_link",
             "topic": "/livox/lidar",
@@ -111,10 +130,17 @@ class CrawlerMujocoRosNode(Node):
         self.lidars = []
         for index, mount in enumerate(mounts):
             topic = str(mount.get("topic", f"/livox/lidar_{index}"))
+            custom_topic = str(mount.get("custom_topic", f"{topic}/custom"))
             self.lidars.append({
                 "site_name": str(mount.get("site_name", f"lidar_{index}")),
                 "frame_id": str(mount.get("frame_id", f"lidar_{index}_link")),
-                "publisher": self.create_publisher(PointCloud2, topic, 2),
+                "pointcloud_publisher": (
+                    self.create_publisher(PointCloud2, topic, 2)
+                    if self.lidar_output_format in ("pointcloud2", "both") else None),
+                "custom_publisher": (
+                    self.create_publisher(self.custom_msg_type, custom_topic, 2)
+                    if self.lidar_output_format in ("custom", "both") else None),
+                "lidar_id": int(mount.get("lidar_id", index)) & 0xff,
                 "sensor": None,
                 "next_time": 0.0,
                 "config": {**self.lidar_cfg, **mount},
@@ -327,25 +353,49 @@ class CrawlerMujocoRosNode(Node):
             rate = max(float(lidar["config"].get("publish_rate", 10.0)), 1e-6)
             if data.time + 1e-12 < lidar["next_time"]:
                 continue
-            lidar["next_time"] = data.time + 1.0 / rate
+            # Preserve the requested phase instead of accumulating lateness
+            # from the lower-rate ROS state update that calls this method.
+            lidar["next_time"] += 1.0 / rate
             if lidar["sensor"] is None:
                 lidar["sensor"] = LivoxMid360Lidar(
                     model, lidar["config"], lidar["site_name"])
-            xyz = lidar["sensor"].scan(data)
-            message = PointCloud2()
-            message.header.stamp = stamp
-            message.header.frame_id = lidar["frame_id"]
-            message.height, message.width = 1, len(xyz)
-            message.fields = [
-                PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
-                PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
-                PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
-            ]
-            message.is_bigendian, message.point_step = False, 12
-            message.row_step = message.point_step * message.width
-            message.is_dense = True
-            message.data = np.ascontiguousarray(xyz, dtype=np.float32).tobytes()
-            lidar["publisher"].publish(message)
+            xyz, ray_indices, ray_count = lidar["sensor"].scan_with_ray_indices(data)
+            if lidar["pointcloud_publisher"] is not None:
+                message = PointCloud2()
+                message.header.stamp = stamp
+                message.header.frame_id = lidar["frame_id"]
+                message.height, message.width = 1, len(xyz)
+                message.fields = [
+                    PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
+                    PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
+                    PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
+                ]
+                message.is_bigendian, message.point_step = False, 12
+                message.row_step = message.point_step * message.width
+                message.is_dense = True
+                message.data = np.ascontiguousarray(xyz, dtype=np.float32).tobytes()
+                lidar["pointcloud_publisher"].publish(message)
+            if lidar["custom_publisher"] is not None:
+                custom = self.custom_msg_type()
+                custom.header.stamp = stamp
+                custom.header.frame_id = lidar["frame_id"]
+                custom.timebase = (
+                    int(stamp.sec) * 1_000_000_000 + int(stamp.nanosec))
+                custom.point_num = len(xyz)
+                custom.lidar_id = lidar["lidar_id"]
+                reflectivity = int(lidar["config"].get("reflectivity", 100))
+                reflectivity = max(0, min(255, reflectivity))
+                for index, coordinates in enumerate(xyz):
+                    point = self.custom_point_type()
+                    # The raycast evaluates the whole cloud at one MuJoCo
+                    # pose, so FAST-LIO must treat it as an instant scan.
+                    point.offset_time = 0
+                    point.x, point.y, point.z = map(float, coordinates)
+                    point.reflectivity = reflectivity
+                    point.tag = 0
+                    point.line = int(ray_indices[index] % 4)
+                    custom.points.append(point)
+                lidar["custom_publisher"].publish(custom)
 
     def _cmd_vel(self, message: Twist) -> None:
         with self.lock:
@@ -376,10 +426,6 @@ class CrawlerMujocoRosNode(Node):
         nanoseconds = int((data.time - seconds) * 1_000_000_000)
         stamp = self.get_clock().now().to_msg()
         stamp.sec, stamp.nanosec = seconds, nanoseconds
-
-        clock = Clock()
-        clock.clock = stamp
-        self.clock_pub.publish(clock)
 
         joints = JointState()
         joints.header.stamp = stamp
@@ -445,7 +491,35 @@ class CrawlerMujocoRosNode(Node):
         odom.twist.twist.angular.z = float(data.qvel[5])
         self.odom_pub.publish(odom)
 
+        self.publish_cameras(model, data, stamp)
+        self.publish_lidar(model, data, stamp)
+
+        if self.publish_ground_truth_tf:
+            transform = TransformStamped()
+            transform.header.stamp = stamp
+            transform.header.frame_id = "map"
+            transform.child_frame_id = "base_link"
+            transform.transform.translation.x = float(position[0])
+            transform.transform.translation.y = float(position[1])
+            transform.transform.translation.z = float(position[2])
+            transform.transform.rotation.w = float(quaternion[0])
+            transform.transform.rotation.x = float(quaternion[1])
+            transform.transform.rotation.y = float(quaternion[2])
+            transform.transform.rotation.z = float(quaternion[3])
+            self.tf_broadcaster.sendTransform(transform)
+
+    def publish_imu(self, model, data) -> None:
+        """Publish each IMU independently at its simulation-time rate."""
+        seconds = int(data.time)
+        nanoseconds = int((data.time - seconds) * 1_000_000_000)
+        stamp = self.get_clock().now().to_msg()
+        stamp.sec, stamp.nanosec = seconds, nanoseconds
         for configured_imu in self.imus:
+            rate = max(float(configured_imu["noise"].get(
+                "sample_rate_hz", 200.0)), 1e-6)
+            if data.time + 1e-12 < configured_imu["next_time"]:
+                continue
+            configured_imu["next_time"] += 1.0 / rate
             sensor_name = configured_imu["sensor_name"]
             gyro = data.sensor(f"{sensor_name}_gyro").data
             acceleration = data.sensor(f"{sensor_name}_acceleration").data
@@ -474,21 +548,6 @@ class CrawlerMujocoRosNode(Node):
             ]
             for publisher in configured_imu["publishers"]:
                 publisher.publish(imu_message)
-        self.publish_cameras(model, data, stamp)
-        self.publish_lidar(model, data, stamp)
-
-        transform = TransformStamped()
-        transform.header.stamp = stamp
-        transform.header.frame_id = "map"
-        transform.child_frame_id = "base_link"
-        transform.transform.translation.x = float(position[0])
-        transform.transform.translation.y = float(position[1])
-        transform.transform.translation.z = float(position[2])
-        transform.transform.rotation.w = float(quaternion[0])
-        transform.transform.rotation.x = float(quaternion[1])
-        transform.transform.rotation.y = float(quaternion[2])
-        transform.transform.rotation.z = float(quaternion[3])
-        self.tf_broadcaster.sendTransform(transform)
 
     def _contact_markers(self, model, data, stamp, position,
                          world_from_base: np.ndarray) -> MarkerArray:
@@ -559,6 +618,9 @@ class CrawlerMujocoRosNode(Node):
         return dimension
 
     def publish_clock(self, simulation_time: float) -> None:
+        if simulation_time + 1e-12 < self.next_clock_time:
+            return
+        self.next_clock_time += 1.0 / max(self.clock_publish_rate, 1e-6)
         seconds = int(simulation_time)
         clock = Clock()
         clock.clock.sec = seconds
@@ -567,9 +629,9 @@ class CrawlerMujocoRosNode(Node):
 
 
 class Ros2Bridge:
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: dict, publish_ground_truth_tf: bool = True):
         rclpy.init(args=None, signal_handler_options=SignalHandlerOptions.NO)
-        self.node = CrawlerMujocoRosNode(cfg)
+        self.node = CrawlerMujocoRosNode(cfg, publish_ground_truth_tf)
         self.executor = SingleThreadedExecutor()
         self.executor.add_node(self.node)
         self.thread = threading.Thread(target=self.executor.spin, daemon=True)
@@ -580,6 +642,9 @@ class Ros2Bridge:
 
     def publish_state(self, model, data) -> None:
         self.node.publish_state(model, data)
+
+    def publish_imu(self, model, data) -> None:
+        self.node.publish_imu(model, data)
 
     def publish_clock(self, simulation_time: float) -> None:
         self.node.publish_clock(simulation_time)

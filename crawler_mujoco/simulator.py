@@ -726,6 +726,8 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
     signal.signal(signal.SIGINT, lambda _signum, _frame: stop_event.set())
     next_sample = 0.0
     sample_period = 1 / float(cfg["simulation"]["render_fps"])
+    pacing_wall_start = time.perf_counter()
+    pacing_sim_start = float(data.time)
     try:
         while (not stop_event.is_set() and data.time < duration
                and (viewer is None or viewer.is_running())):
@@ -742,17 +744,25 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
                     mujoco.mj_resetData(model, data)
                     rows.clear()
                     next_sample = 0.0
+                    pacing_wall_start = time.perf_counter()
+                    pacing_sim_start = float(data.time)
                 set_velocity_controls(model, data, cfg, linear, angular)
                 if paused:
                     if viewer is not None:
                         viewer.sync()
                     time.sleep(0.01)
+                    pacing_wall_start = time.perf_counter()
+                    pacing_sim_start = float(data.time)
                     continue
             if spawn_robot:
                 wrap_straight_sections(model, data, cfg)
                 update_track_velocity_controls(model, data, cfg)
                 update_flipper_controls(model, data, cfg)
             step_physics(model, data, cfg)
+            if ros_bridge is not None:
+                ros_bridge.publish_clock(data.time)
+                if spawn_robot:
+                    ros_bridge.publish_imu(model, data)
             if control_state is not None and spawn_robot:
                 control_state.update_pose(data.time, data.sensor("body_position").data[0])
             if data.time >= next_sample and spawn_robot:
@@ -765,13 +775,13 @@ def run(cfg: dict, shape: str, output: Path, gui: bool = False,
                     ros_bridge.publish_state(model, data)
                 next_sample += sample_period
             elif data.time >= next_sample:
-                if ros_bridge is not None:
-                    ros_bridge.publish_clock(data.time)
                 next_sample += sample_period
             if viewer is not None:
                 viewer.sync()
             if viewer is not None or control_state is not None or ros_bridge is not None:
-                remaining = float(cfg["simulation"]["timestep"]) - (time.perf_counter() - before)
+                target_wall_time = (
+                    pacing_wall_start + float(data.time) - pacing_sim_start)
+                remaining = target_wall_time - time.perf_counter()
                 if remaining > 0:
                     time.sleep(remaining)
     finally:
@@ -823,10 +833,17 @@ def main() -> None:
                         help="Run the environment without spawning the crawler robot")
     parser.add_argument("--ros2", action="store_true",
                         help="Enable /cmd_vel, flipper commands, joint_states, odom, and clock")
+    parser.add_argument("--no-ground-truth-tf", action="store_true",
+                        help="Do not publish the ground-truth map->base_link transform")
+    parser.add_argument("--lidar-output-format",
+                        choices=("pointcloud2", "custom", "both"), default=None,
+                        help="Override ROS LiDAR output format")
     parser.add_argument("--output", type=Path, default=Path.cwd() / "results")
     parser.add_argument("--write-xml-only", action="store_true")
     args = parser.parse_args()
     cfg = load_config(args.config)
+    if args.lidar_output_format is not None:
+        cfg["sensors"]["lidar"]["output_format"] = args.lidar_output_format
     if args.arena_yaml is not None:
         cfg["environment"]["arena_yaml"] = args.arena_yaml
     if args.no_robot:
@@ -850,7 +867,8 @@ def main() -> None:
         print(f"control UI: {url}")
     if args.ros2:
         from .ros_bridge import Ros2Bridge
-        ros_bridge = Ros2Bridge(cfg)
+        ros_bridge = Ros2Bridge(
+            cfg, publish_ground_truth_tf=not args.no_ground_truth_tf)
         if bool(cfg["environment"].get("spawn_robot", True)):
             print("ROS 2: /cmd_vel and /crawler/flipper_commands enabled")
         else:

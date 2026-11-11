@@ -23,40 +23,45 @@ sensors:
   mid360:
     enabled: true
     lidar:
-      publish_rate: 10.0
+      # pointcloud2, custom (livox_ros_driver2/CustomMsg), or both.
+      output_format: pointcloud2
+      publish_rate: 15.0
       points_per_scan: 2000
       pattern_file: package://crawler_mujoco/assets/lidar_patterns/livox_mid360_pattern/livox_mid360_measured.yaml
       min_range: 0.1
-      max_range: 40.0
+      max_range: 10.0
       vertical_min_deg: -7.0
       vertical_max_deg: 52.0
     imu:
       noise:
-        enabled: true
+        enabled: false
         seed: 42
-        sample_rate_hz: 30.0
-        gyro_noise_density_dps_sqrt_hz: 0.0045
-        accel_noise_density_g_sqrt_hz: 0.0001
-        gyro_initial_bias_std_dps: 0.05
-        accel_initial_bias_std_mps2: 0.01
-        gyro_bias_random_walk_dps_sqrt_s: 0.002
-        accel_bias_random_walk_mps2_sqrt_s: 0.001
-        gyro_scale_error: 0.005
-        accel_scale_error: 0.005
+        sample_rate_hz: 200.0
+        # Keep a very small nonzero error for FAST-LIO simulation tests.
+        gyro_noise_density_dps_sqrt_hz: 0.000045
+        accel_noise_density_g_sqrt_hz: 0.000001
+        gyro_initial_bias_std_dps: 0.0005
+        accel_initial_bias_std_mps2: 0.0001
+        gyro_bias_random_walk_dps_sqrt_s: 0.00002
+        accel_bias_random_walk_mps2_sqrt_s: 0.00001
+        gyro_scale_error: 0.00005
+        accel_scale_error: 0.00005
         gyro_full_scale_dps: 2000.0
         accel_full_scale_g: 4.0
-        quantization_enabled: true
+        quantization_enabled: false
         adc_levels: 65536
     frames:
       - name: front
         frame_id: front_lidar_link
         pointcloud_topic: /livox/front/lidar
+        custom_topic: /livox/front/custom
         imu_topic: /livox/front/imu
         position: [0.275, 0.0, 0.065]
         rpy_deg: [0.0, 20.0, 0.0]
       - name: rear
         frame_id: rear_lidar_link
         pointcloud_topic: /livox/rear/lidar
+        custom_topic: /livox/rear/custom
         imu_topic: /livox/rear/imu
         position: [-0.275, 0.0, 0.065]
         rpy_deg: [0.0, 20.0, 180.0]
